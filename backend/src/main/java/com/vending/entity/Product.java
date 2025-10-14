@@ -1,5 +1,6 @@
 package com.vending.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -80,14 +81,17 @@ public class Product {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "products")
     @Builder.Default
     private List<ProcurementBatch> batches = new ArrayList<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<MachineProductPrice> machinePrices = new HashSet<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "product")
     @Builder.Default
     private Set<RestockItem> restockItems = new HashSet<>();

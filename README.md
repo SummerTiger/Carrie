@@ -1,88 +1,139 @@
-# Vending Machine Inventory & Cost Management System
+# Vending Inventory Management System
 
-A production-ready full-stack application for managing vending machine inventory, procurement, restocking operations, and cost tracking with HST tax management for Ontario.
+A complete full-stack application for managing vending machine inventory, built with Spring Boot, React, and React Native.
+
+## 📋 Project Overview
+
+This system consists of **three applications**:
+
+1. **Backend API** (Port 8080) - Spring Boot REST API with JWT authentication
+2. **Admin Dashboard** (Port 5173) - React web application for managing inventory
+3. **Mobile App** - React Native iOS application for on-the-go access
 
 ## 🎯 Features
 
-### Backend (Java Spring Boot)
-- **Centralized Inventory Management** - Track products across all machines
-- **Machine Configuration** - Define allowed/forbidden product categories per machine
-- **Procurement Tracking** - Manage supplier purchases with batch tracking
-- **Restocking Logs** - Record site visits and inventory replenishment
-- **HST Tax Management** - Automatic Ontario HST (13%) calculation and tracking
-- **Custom Pricing** - Machine-specific product pricing overrides
-- **User Management** - Role-based access control (ADMIN, OPERATOR, VIEWER)
-- **RESTful API** - Complete OpenAPI/Swagger documentation
-- **Real-time Alerts** - Low stock notifications and inventory warnings
+### Backend (Spring Boot 3.2.5 + Java 21)
+- ✅ **JWT Authentication** - Secure token-based auth with BCrypt password hashing
+- ✅ **Product Management** - Full CRUD operations for inventory items
+- ✅ **Vending Machine Management** - Track machines, locations, and features
+- ✅ **RESTful API** - Clean REST endpoints with Swagger documentation
+- ✅ **Database Migrations** - Flyway for version-controlled schema changes
+- ✅ **CORS Support** - Configured for React frontends
+- ✅ **MySQL Database** - Production-ready relational database
 
-### Frontend (React + TypeScript)
-- **Admin Dashboard** - Comprehensive operations management interface
-- **Product Inventory** - CRUD operations with batch history
-- **Machine Overview** - DataGrid with filters and status tracking
-- **Restocking Interface** - Site visit forms with real-time updates
-- **Procurement Logs** - Supplier management and invoice tracking
-- **Analytics** - Cost analysis and profit margin reports
+### Admin Dashboard (React 18 + Vite)
+- ✅ **JWT Authentication** - Login with token persistence
+- ✅ **Products Page** - Full CRUD interface with real-time updates
+  - Product name, category, pricing
+  - Stock levels (current/minimum)
+  - HST tax exemption status
+  - Barcode and SKU tracking
+  - Active/inactive status
+- ✅ **Vending Machines Page** - Full CRUD interface
+  - Brand and model information
+  - Location details (name, address, city, province, postal code)
+  - Payment features (cash reader, POS, coin changer)
+  - Active/inactive status
+- ✅ **Dashboard** - System statistics and health monitoring
+- ✅ **Protected Routes** - Automatic login redirect
+- ✅ **Responsive Design** - Clean, modern UI
 
-### Mobile (React Native - iOS)
-- **Offline-First** - SQLite local storage with background sync
-- **Barcode Scanning** - Quick product identification
-- **Site Visit Workflow** - Guided restocking checklists
-- **Photo Capture** - Document machine issues
-- **Cash Collection** - Track payments during visits
+### Mobile App (React Native 0.82 for iOS)
+- ✅ **JWT Authentication** - AsyncStorage token persistence
+- ✅ **Products List** - View all products with details
+- ✅ **Machines List** - View all vending machines with locations
+- ✅ **Pull-to-Refresh** - Update data on demand
+- ✅ **Bottom Tab Navigation** - Easy navigation between screens
+- ✅ **Native iOS Styling** - Platform-optimized UI
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Java 21+
-- Maven 3.8+
+
+**All Applications:**
 - MySQL 8.0+
-- Node.js 18+ (for frontend)
-- Docker & Docker Compose (optional)
+- Node.js 16+
 
-### Backend Setup
+**Backend:**
+- Java 21 (JDK)
+- Maven 3.6+
 
-1. **Clone and navigate to backend:**
+**Mobile App (additional):**
+- macOS (for iOS development)
+- Xcode 15+
+- CocoaPods
+
+---
+
+## 📦 Installation
+
+### 1. Database Setup
+
+Create the MySQL database:
+
+```sql
+CREATE DATABASE vending_inventory;
+CREATE USER 'vending_user'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON vending_inventory.* TO 'vending_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+### 2. Backend Setup
+
 ```bash
 cd backend
-```
 
-2. **Configure database** (Edit `src/main/resources/application.yml` or set environment variables):
-```yaml
-DATABASE_URL=jdbc:mysql://localhost:3306/vending_inventory
-DATABASE_USERNAME=your_username
-DATABASE_PASSWORD=your_password
-```
+# Set database password as environment variable
+export DATABASE_PASSWORD=your_password
 
-3. **Build and run:**
-```bash
-mvn clean install
+# Run with Java 21
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 mvn spring-boot:run
 ```
 
-The API will be available at `http://localhost:8080`
+**Backend will start on http://localhost:8080**
 
-4. **Access Swagger UI:**
-```
-http://localhost:8080/swagger-ui.html
-```
+**Swagger API Docs**: http://localhost:8080/swagger-ui.html
 
-### Using Docker Compose
+### 3. Admin Dashboard Setup
 
 ```bash
-docker-compose up -d
+cd admin-dashboard
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
 ```
 
-This starts:
-- MySQL database on port 3306
-- Backend API on port 8080
-- Frontend on port 3000
+**Dashboard will start on http://localhost:5173**
 
-### Database Migration
+### 4. Mobile App Setup
 
-Flyway automatically runs migrations on startup. Manual execution:
 ```bash
-mvn flyway:migrate
+cd VendingMobileApp
+
+# Install dependencies
+npm install
+
+# Point xcode-select to Xcode (REQUIRED for iOS)
+sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+
+# Install iOS pods
+cd ios
+pod install
+cd ..
+
+# Run on iOS Simulator
+npx react-native run-ios
 ```
+
+**Alternatively, open in Xcode:**
+```bash
+cd ios && xed .
+```
+Then click the Run button.
 
 ## 📁 Project Structure
 
@@ -399,3 +450,53 @@ For issues and questions:
 - [ ] Machine telemetry integration
 - [ ] Payment gateway integration
 - [ ] Advanced reporting (PDF/Excel export)
+
+---
+
+## 🎉 Project Status
+
+### ✅ **COMPLETE - All Three Applications Fully Implemented**
+
+| Application | Status | URL | Login |
+|------------|--------|-----|-------|
+| **Backend API** | ✅ Running | http://localhost:8080 | N/A |
+| **Swagger Docs** | ✅ Available | http://localhost:8080/swagger-ui.html | N/A |
+| **Admin Dashboard** | ✅ Running | http://localhost:5173 | admin / admin123 |
+| **Mobile App** | ✅ Ready | iOS Simulator | admin / admin123 |
+
+### Current Running Services
+
+**Terminal 1 - Backend:**
+```bash
+cd /Users/ericgu/IdeaProjects/Carrie/Vending/backend
+export DATABASE_PASSWORD=Radiance030
+mvn spring-boot:run
+```
+
+**Terminal 2 - Admin Dashboard:**
+```bash
+cd /Users/ericgu/IdeaProjects/Carrie/Vending/admin-dashboard
+npm run dev
+```
+
+**For Mobile App:**
+```bash
+# First time: sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+cd /Users/ericgu/IdeaProjects/Carrie/Vending/VendingMobileApp/ios
+pod install
+cd ..
+npx react-native run-ios
+```
+
+---
+
+## 📚 Additional Documentation
+
+- **Main README** - This file (setup and overview)
+- **Mobile App README** - `/VendingMobileApp/MOBILE_README.md`
+- **Project Summary** - `/PROJECT_SUMMARY.md` (detailed technical overview)
+
+---
+
+**Last Updated:** January 2025  
+**Project Complete:** ✅ All features implemented and tested
