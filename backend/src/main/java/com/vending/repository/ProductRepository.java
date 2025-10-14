@@ -23,7 +23,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     List<Product> findByActiveTrue();
 
-    List<Product> findByCategoryAndActiveTrue(String category, boolean active);
+    List<Product> findByCategoryAndActiveTrue(String category);
 
     @Query("SELECT p FROM Product p WHERE p.active = true AND p.currentStock < p.minimumStock")
     List<Product> findLowStockProducts();
