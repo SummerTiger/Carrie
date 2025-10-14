@@ -1,6 +1,8 @@
 package com.vending.repository;
 
 import com.vending.entity.VendingMachine;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -38,4 +40,17 @@ public interface VendingMachineRepository extends JpaRepository<VendingMachine, 
     long countActiveMachines();
 
     Optional<VendingMachine> findByPosSerialNumber(String posSerialNumber);
+
+    // Paginated methods
+    Page<VendingMachine> findByBrandContainingIgnoreCaseOrModelContainingIgnoreCase(
+            String brand, String model, Pageable pageable);
+
+    @Query("SELECT vm FROM VendingMachine vm WHERE vm.location.city = :city")
+    Page<VendingMachine> findByLocationCity(@Param("city") String city, Pageable pageable);
+
+    @Query("SELECT vm FROM VendingMachine vm WHERE vm.location.city = :city AND vm.active = :active")
+    Page<VendingMachine> findByLocationCityAndActive(
+            @Param("city") String city, @Param("active") Boolean active, Pageable pageable);
+
+    Page<VendingMachine> findByActive(Boolean active, Pageable pageable);
 }

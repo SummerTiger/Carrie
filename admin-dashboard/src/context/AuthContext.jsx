@@ -19,9 +19,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     try {
       const response = await authAPI.login(username, password);
-      const { token, ...userData } = response.data;
+      const { token, refreshToken, ...userData } = response.data;
 
       localStorage.setItem('token', token);
+      localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
 
@@ -34,16 +35,41 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+  const logout = async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (refreshToken) {
+        await authAPI.logout(refreshToken);
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      setUser(null);
+    }
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      await authAPI.changePassword(currentPassword, newPassword);
+      // After password change, user needs to login again
+      await logout();
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Password change failed'
+      };
+    }
   };
 
   const value = {
     user,
     login,
     logout,
+    changePassword,
     isAuthenticated: !!user,
   };
 

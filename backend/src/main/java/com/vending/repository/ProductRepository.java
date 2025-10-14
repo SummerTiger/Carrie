@@ -1,6 +1,8 @@
 package com.vending.repository;
 
 import com.vending.entity.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -53,4 +55,14 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     Long getTotalStockCount();
 
     List<Product> findByHstExempt(boolean hstExempt);
+
+    // Paginated methods
+    Page<Product> findByNameContainingIgnoreCaseOrCategoryContainingIgnoreCase(
+            String name, String category, Pageable pageable);
+
+    Page<Product> findByCategory(String category, Pageable pageable);
+
+    Page<Product> findByCategoryAndActive(String category, Boolean active, Pageable pageable);
+
+    Page<Product> findByActive(Boolean active, Pageable pageable);
 }

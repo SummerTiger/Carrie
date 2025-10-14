@@ -40,6 +40,14 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (username, password) =>
     api.post('/auth/login', { username, password }),
+  logout: (refreshToken) =>
+    api.post('/auth/logout', { refreshToken }),
+  refresh: (refreshToken) =>
+    api.post('/auth/refresh', { refreshToken }),
+  changePassword: (currentPassword, newPassword) =>
+    api.post('/auth/change-password', { currentPassword, newPassword }),
+  validateToken: () =>
+    api.get('/auth/validate'),
 };
 
 // Products
@@ -66,6 +74,19 @@ export const machinesAPI = {
 // Health
 export const healthAPI = {
   check: () => api.get('/health'),
+};
+
+// Audit Logs
+export const auditLogsAPI = {
+  getAll: (params) => api.get('/audit-logs', { params }),
+  getByUsername: (username, params) => api.get(`/audit-logs/user/${username}`, { params }),
+  getByAction: (action, params) => api.get(`/audit-logs/action/${action}`, { params }),
+  getByResource: (resourceType, params) => api.get(`/audit-logs/resource/${resourceType}`, { params }),
+  getByDateRange: (startDate, endDate, params) => api.get('/audit-logs/date-range', {
+    params: { startDate, endDate, ...params }
+  }),
+  getRecent: () => api.get('/audit-logs/recent'),
+  cleanup: (daysToKeep) => api.delete('/audit-logs/cleanup', { params: { daysToKeep } }),
 };
 
 export default api;

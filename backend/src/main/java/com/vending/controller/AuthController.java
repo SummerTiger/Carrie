@@ -1,17 +1,28 @@
 package com.vending.controller;
 
-import com.vending.dto.AuthResponse;
-import com.vending.dto.LoginRequest;
+import com.vending.dto.*;
+import com.vending.entity.AuditLog;
+import com.vending.entity.RefreshToken;
+import com.vending.entity.User;
+import com.vending.exception.BadRequestException;
+import com.vending.repository.UserRepository;
 import com.vending.security.JwtTokenProvider;
+import com.vending.service.AuditLogService;
+import com.vending.service.LoginAttemptService;
+import com.vending.service.RefreshTokenService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -25,38 +36,165 @@ public class AuthController {
     @Autowired
     private JwtTokenProvider tokenProvider;
 
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+
+    @Autowired
+    private LoginAttemptService loginAttemptService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AuditLogService auditLogService;
+
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.username(),
-                        loginRequest.password()
-                )
-        );
+        try {
+            // Check if account is locked before attempting authentication
+            User user = userRepository.findByUsername(loginRequest.username()).orElse(null);
+            if (user != null && loginAttemptService.isAccountLocked(user)) {
+                throw new LockedException("Account is locked due to multiple failed login attempts. Please try again later.");
+            }
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String token = tokenProvider.generateToken(authentication);
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.username(),
+                            loginRequest.password()
+                    )
+            );
 
-        org.springframework.security.core.userdetails.UserDetails userDetails =
-                (org.springframework.security.core.userdetails.UserDetails) authentication.getPrincipal();
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String token = tokenProvider.generateToken(authentication);
 
-        Set<String> roles = userDetails.getAuthorities().stream()
+            User userDetails = (User) authentication.getPrincipal();
+
+            // Create refresh token
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails);
+
+            // Record successful login
+            loginAttemptService.loginSucceeded(loginRequest.username());
+
+            // Log successful login
+            auditLogService.log(
+                    AuditLog.ACTION_LOGIN,
+                    AuditLog.RESOURCE_USER,
+                    userDetails.getId().toString(),
+                    "User logged in successfully"
+            );
+
+            Set<String> roles = userDetails.getAuthorities().stream()
+                    .map(item -> item.getAuthority())
+                    .collect(Collectors.toSet());
+
+            return ResponseEntity.ok(AuthResponse.builder()
+                    .token(token)
+                    .refreshToken(refreshToken.getToken())
+                    .type("Bearer")
+                    .username(userDetails.getUsername())
+                    .email(userDetails.getEmail())
+                    .roles(roles)
+                    .build());
+
+        } catch (BadCredentialsException e) {
+            // Record failed login attempt
+            loginAttemptService.loginFailed(loginRequest.username());
+
+            // Log failed login attempt
+            auditLogService.logFailure(
+                    AuditLog.ACTION_LOGIN_FAILED,
+                    AuditLog.RESOURCE_USER,
+                    loginRequest.username(),
+                    "Failed login attempt - invalid credentials",
+                    "Invalid username or password"
+            );
+
+            throw new BadRequestException("Invalid username or password");
+        } catch (LockedException e) {
+            throw new BadRequestException(e.getMessage());
+        }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        RefreshToken refreshToken = refreshTokenService.findByToken(request.refreshToken());
+        refreshTokenService.verifyExpiration(refreshToken);
+
+        if (!refreshToken.isValid()) {
+            throw new BadRequestException("Refresh token is not valid");
+        }
+
+        User user = refreshToken.getUser();
+
+        // Create new access token
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                user, null, user.getAuthorities());
+        String newAccessToken = tokenProvider.generateToken(authentication);
+
+        Set<String> roles = user.getAuthorities().stream()
                 .map(item -> item.getAuthority())
                 .collect(Collectors.toSet());
 
-        // If User entity, get email, otherwise use username
-        String email = userDetails.getUsername();
-        if (userDetails instanceof com.vending.entity.User) {
-            email = ((com.vending.entity.User) userDetails).getEmail();
+        return ResponseEntity.ok(AuthResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(refreshToken.getToken())
+                .type("Bearer")
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .roles(roles)
+                .build());
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        refreshTokenService.revokeToken(request.refreshToken());
+
+        // Log logout
+        auditLogService.log(
+                AuditLog.ACTION_LOGOUT,
+                null,
+                null,
+                "User logged out successfully"
+        );
+
+        return ResponseEntity.ok("Logged out successfully");
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<String> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BadRequestException("User not authenticated");
         }
 
-        return ResponseEntity.ok(new AuthResponse(
-                token,
-                "Bearer",
-                userDetails.getUsername(),
-                email,
-                roles
-        ));
+        User user = (User) authentication.getPrincipal();
+
+        // Verify current password
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new BadRequestException("Current password is incorrect");
+        }
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        user.setPasswordChangedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        // Revoke all existing refresh tokens for security
+        refreshTokenService.revokeAllUserTokens(user);
+
+        // Log password change
+        auditLogService.log(
+                AuditLog.ACTION_PASSWORD_CHANGED,
+                AuditLog.RESOURCE_USER,
+                user.getId().toString(),
+                "User password changed successfully"
+        );
+
+        return ResponseEntity.ok("Password changed successfully. Please login again.");
     }
 
     @GetMapping("/validate")

@@ -7,6 +7,7 @@ import java.util.Set;
 @Builder
 public record AuthResponse(
     String token,
+    String refreshToken,
     String type,
     String username,
     String email,

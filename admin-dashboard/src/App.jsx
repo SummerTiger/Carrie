@@ -5,6 +5,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import VendingMachines from './pages/VendingMachines';
+import AuditLogs from './pages/AuditLogs';
+import ChangePassword from './pages/ChangePassword';
 import DashboardLayout from './components/DashboardLayout';
 
 // Protected Route Component
@@ -36,6 +38,8 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="products" element={<Products />} />
             <Route path="machines" element={<VendingMachines />} />
+            <Route path="audit-logs" element={<AuditLogs />} />
+            <Route path="change-password" element={<ChangePassword />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/dashboard" replace />} />

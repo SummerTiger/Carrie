@@ -1,7 +1,7 @@
 package com.vending.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -28,10 +28,12 @@ public class VendingMachine {
     private UUID id;
 
     @NotBlank(message = "Brand is required")
+    @Size(min = 1, max = 100, message = "Brand must be between 1 and 100 characters")
     @Column(nullable = false)
     private String brand;
 
     @NotBlank(message = "Model is required")
+    @Size(min = 1, max = 100, message = "Model must be between 1 and 100 characters")
     @Column(nullable = false)
     private String model;
 
@@ -41,12 +43,14 @@ public class VendingMachine {
     @Column(name = "has_cashless_pos")
     private boolean hasCashlessPos;
 
+    @Size(max = 100, message = "POS serial number must not exceed 100 characters")
     @Column(name = "pos_serial_number")
     private String posSerialNumber;
 
     @Column(name = "has_coin_changer")
     private boolean hasCoinChanger;
 
+    @Size(max = 100, message = "Coin changer serial number must not exceed 100 characters")
     @Column(name = "coin_changer_serial_number")
     private String coinChangerSerialNumber;
 
@@ -67,6 +71,7 @@ public class VendingMachine {
     @Builder.Default
     private Set<String> forbiddenCategories = new HashSet<>();
 
+    @Size(max = 2000, message = "Notes must not exceed 2000 characters")
     @Column(length = 2000)
     private String notes;
 

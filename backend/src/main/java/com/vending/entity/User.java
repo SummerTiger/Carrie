@@ -80,6 +80,16 @@ public class User implements UserDetails {
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
 
+    @Column(name = "failed_login_attempts")
+    @Builder.Default
+    private Integer failedLoginAttempts = 0;
+
+    @Column(name = "account_locked_until")
+    private LocalDateTime accountLockedUntil;
+
+    @Column(name = "password_changed_at")
+    private LocalDateTime passwordChangedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -102,6 +112,10 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
+        // Check if account is temporarily locked due to failed login attempts
+        if (accountLockedUntil != null && LocalDateTime.now().isBefore(accountLockedUntil)) {
+            return false;
+        }
         return accountNonLocked;
     }
 
