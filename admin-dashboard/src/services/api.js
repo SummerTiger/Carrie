@@ -89,4 +89,15 @@ export const auditLogsAPI = {
   cleanup: (daysToKeep) => api.delete('/audit-logs/cleanup', { params: { daysToKeep } }),
 };
 
+// Procurement Batches
+export const procurementAPI = {
+  getAll: () => api.get('/procurement-batches'),
+  getById: (id) => api.get(`/procurement-batches/${id}`),
+  getBySupplier: (supplier) => api.get(`/procurement-batches/supplier/${supplier}`),
+  getAllSuppliers: () => api.get('/procurement-batches/suppliers'),
+  create: (batch) => api.post('/procurement-batches', batch),
+  update: (id, batch) => api.put(`/procurement-batches/${id}`, batch),
+  delete: (id) => api.delete(`/procurement-batches/${id}`),
+};
+
 export default api;
