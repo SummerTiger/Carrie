@@ -2,9 +2,11 @@ package com.vending.service;
 
 import com.vending.dto.ProcurementBatchDto;
 import com.vending.dto.ProcurementItemDto;
+import com.vending.dto.ReceiptImageDto;
 import com.vending.entity.ProcurementBatch;
 import com.vending.entity.ProcurementItem;
 import com.vending.entity.Product;
+import com.vending.entity.ReceiptImage;
 import com.vending.repository.ProcurementBatchRepository;
 import com.vending.repository.ProductRepository;
 import jakarta.transaction.Transactional;
@@ -79,6 +81,21 @@ public class ProcurementBatchService {
             }
         }
 
+        // Add receipt images
+        if (dto.receiptImages() != null) {
+            for (ReceiptImageDto imageDto : dto.receiptImages()) {
+                ReceiptImage image = ReceiptImage.builder()
+                        .imageUrl(imageDto.imageUrl())
+                        .imageName(imageDto.imageName())
+                        .contentType(imageDto.contentType())
+                        .fileSize(imageDto.fileSize())
+                        .imageOrder(imageDto.imageOrder())
+                        .batch(batch)
+                        .build();
+                batch.getReceiptImages().add(image);
+            }
+        }
+
         ProcurementBatch saved = procurementBatchRepository.save(batch);
 
         // Update product stock quantities
@@ -119,6 +136,24 @@ public class ProcurementBatchService {
             }
         }
 
+        // Clear existing receipt images
+        batch.getReceiptImages().clear();
+
+        // Add new receipt images
+        if (dto.receiptImages() != null) {
+            for (ReceiptImageDto imageDto : dto.receiptImages()) {
+                ReceiptImage image = ReceiptImage.builder()
+                        .imageUrl(imageDto.imageUrl())
+                        .imageName(imageDto.imageName())
+                        .contentType(imageDto.contentType())
+                        .fileSize(imageDto.fileSize())
+                        .imageOrder(imageDto.imageOrder())
+                        .batch(batch)
+                        .build();
+                batch.getReceiptImages().add(image);
+            }
+        }
+
         ProcurementBatch updated = procurementBatchRepository.save(batch);
         return toDto(updated);
     }
@@ -147,6 +182,10 @@ public class ProcurementBatchService {
                 .map(this::toItemDto)
                 .collect(Collectors.toList());
 
+        List<ReceiptImageDto> receiptImageDtos = batch.getReceiptImages().stream()
+                .map(this::toReceiptImageDto)
+                .collect(Collectors.toList());
+
         return ProcurementBatchDto.builder()
                 .id(batch.getId())
                 .purchaseDate(batch.getPurchaseDate())
@@ -160,6 +199,7 @@ public class ProcurementBatchService {
                 .notes(batch.getNotes())
                 .totalItemsCount(batch.getTotalItemsCount())
                 .createdAt(batch.getCreatedAt())
+                .receiptImages(receiptImageDtos)
                 .build();
     }
 
@@ -175,6 +215,18 @@ public class ProcurementBatchService {
                 .hstExempt(item.isHstExempt())
                 .totalCost(item.getTotalCost())
                 .totalWithHst(item.getTotalWithHst())
+                .build();
+    }
+
+    private ReceiptImageDto toReceiptImageDto(ReceiptImage image) {
+        return ReceiptImageDto.builder()
+                .id(image.getId())
+                .imageUrl(image.getImageUrl())
+                .imageName(image.getImageName())
+                .contentType(image.getContentType())
+                .fileSize(image.getFileSize())
+                .uploadDate(image.getUploadDate())
+                .imageOrder(image.getImageOrder())
                 .build();
     }
 }

@@ -22,5 +22,6 @@ public record ProcurementBatchDto(
     String invoiceNumber,
     String notes,
     Integer totalItemsCount,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    List<ReceiptImageDto> receiptImages
 ) {}

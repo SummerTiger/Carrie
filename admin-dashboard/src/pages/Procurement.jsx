@@ -17,7 +17,9 @@ function Procurement() {
     invoiceNumber: '',
     notes: '',
     items: [],
+    receiptImages: [],
   });
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     fetchBatches();
@@ -136,6 +138,7 @@ function Procurement() {
         unitCost: item.unitCost,
         hstExempt: item.hstExempt,
       })),
+      receiptImages: batch.receiptImages || [],
     });
     setViewMode(true);
     setEditMode(false);
@@ -178,6 +181,79 @@ function Procurement() {
     }
   };
 
+  const handleImageUpload = async (event) => {
+    const files = Array.from(event.target.files);
+    if (formData.receiptImages.length + files.length > 4) {
+      setError('Maximum 4 receipt images allowed');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const uploadPromises = files.map(async (file, index) => {
+        const fileFormData = new FormData();
+        fileFormData.append('file', file);
+        fileFormData.append('category', 'receipt');
+
+        const response = await fetch('http://localhost:8080/api/files/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: fileFormData,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Upload failed: ${errorText}`);
+        }
+
+        const data = await response.json();
+        return {
+          imageUrl: data.fileUrl,
+          imageName: data.fileName,
+          contentType: data.contentType,
+          fileSize: parseInt(data.size),
+          imageOrder: formData.receiptImages.length + index
+        };
+      });
+
+      const uploadedImages = await Promise.all(uploadPromises);
+      setFormData(prev => ({
+        ...prev,
+        receiptImages: [...prev.receiptImages, ...uploadedImages]
+      }));
+      setError('');
+    } catch (err) {
+      console.error('Image upload error:', err);
+      setError('Failed to upload images: ' + err.message);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const removeImage = async (index) => {
+    const image = formData.receiptImages[index];
+    try {
+      // Delete from server
+      await fetch(`http://localhost:8080${image.imageUrl}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      // Remove from state
+      const newImages = formData.receiptImages.filter((_, i) => i !== index);
+      setFormData({
+        ...formData,
+        receiptImages: newImages.map((img, i) => ({ ...img, imageOrder: i }))
+      });
+    } catch (err) {
+      setError('Failed to delete image');
+    }
+  };
+
   const handleCancel = () => {
     setShowForm(false);
     setViewMode(false);
@@ -194,6 +270,7 @@ function Procurement() {
       invoiceNumber: '',
       notes: '',
       items: [],
+      receiptImages: [],
     });
   };
 
@@ -403,6 +480,79 @@ function Procurement() {
                 </div>
               </div>
             )}
+
+            <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+              <h3 style={{ marginTop: 0 }}>Receipt Images {!viewMode && '(Max 4)'}</h3>
+
+              {formData.receiptImages.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+                  {formData.receiptImages.map((image, index) => (
+                    <div key={index} style={{ position: 'relative', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
+                      <img
+                        src={`http://localhost:8080${image.imageUrl}`}
+                        alt={`Receipt ${index + 1}`}
+                        style={{ width: '100%', height: '150px', objectFit: 'cover' }}
+                      />
+                      {!viewMode && (
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          style={{
+                            position: 'absolute',
+                            top: '5px',
+                            right: '5px',
+                            backgroundColor: '#f44336',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '25px',
+                            height: '25px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '16px'
+                          }}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!viewMode && formData.receiptImages.length < 4 && (
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    disabled={uploadingImage}
+                    style={{ display: 'none' }}
+                    id="receipt-upload"
+                  />
+                  <label htmlFor="receipt-upload">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => document.getElementById('receipt-upload').click()}
+                      disabled={uploadingImage}
+                    >
+                      {uploadingImage ? 'Uploading...' : '📷 Upload Receipt Images'}
+                    </button>
+                  </label>
+                  <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+                    {formData.receiptImages.length}/4 images uploaded
+                  </small>
+                </div>
+              )}
+
+              {viewMode && formData.receiptImages.length === 0 && (
+                <p style={{ color: '#999', fontStyle: 'italic' }}>No receipt images uploaded</p>
+              )}
+            </div>
 
             <div style={{ marginTop: '20px' }}>
               {viewMode ? (

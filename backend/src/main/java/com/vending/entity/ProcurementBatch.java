@@ -52,6 +52,11 @@ public class ProcurementBatch {
     @Builder.Default
     private List<ProcurementItem> items = new ArrayList<>();
 
+    @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("imageOrder ASC")
+    @Builder.Default
+    private List<ReceiptImage> receiptImages = new ArrayList<>();
+
     @Column(name = "total_hst", precision = 10, scale = 2)
     @Builder.Default
     private BigDecimal totalHst = BigDecimal.ZERO;
