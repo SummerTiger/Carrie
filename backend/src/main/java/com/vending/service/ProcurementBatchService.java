@@ -70,6 +70,7 @@ public class ProcurementBatchService {
                 ProcurementItem item = ProcurementItem.builder()
                         .product(product)
                         .quantity(itemDto.quantity())
+                        .packQuantity(itemDto.packQuantity() != null ? itemDto.packQuantity() : 1)
                         .unitCost(itemDto.unitCost())
                         .hstExempt(itemDto.hstExempt())
                         .build();
@@ -109,6 +110,7 @@ public class ProcurementBatchService {
                 ProcurementItem item = ProcurementItem.builder()
                         .product(product)
                         .quantity(itemDto.quantity())
+                        .packQuantity(itemDto.packQuantity() != null ? itemDto.packQuantity() : 1)
                         .unitCost(itemDto.unitCost())
                         .hstExempt(itemDto.hstExempt())
                         .build();
@@ -132,7 +134,9 @@ public class ProcurementBatchService {
     private void updateProductStock(ProcurementBatch batch) {
         for (ProcurementItem item : batch.getItems()) {
             Product product = item.getProduct();
-            int newStock = product.getCurrentStock() + item.getQuantity();
+            // Calculate total units: quantity of packs * units per pack
+            int totalUnits = item.getQuantity() * item.getPackQuantity();
+            int newStock = product.getCurrentStock() + totalUnits;
             product.setCurrentStock(newStock);
             productRepository.save(product);
         }
@@ -165,6 +169,7 @@ public class ProcurementBatchService {
                 .productId(item.getProduct().getId())
                 .productName(item.getProduct().getName())
                 .quantity(item.getQuantity())
+                .packQuantity(item.getPackQuantity())
                 .unitCost(item.getUnitCost())
                 .hstAmount(item.getHstAmount())
                 .hstExempt(item.isHstExempt())

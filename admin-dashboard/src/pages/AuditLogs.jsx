@@ -13,6 +13,8 @@ function AuditLogs() {
   });
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [viewMode, setViewMode] = useState(false);
+  const [selectedLog, setSelectedLog] = useState(null);
 
   useEffect(() => {
     fetchLogs();
@@ -83,6 +85,16 @@ function AuditLogs() {
     }
   };
 
+  const handleView = (log) => {
+    setSelectedLog(log);
+    setViewMode(true);
+  };
+
+  const handleCancel = () => {
+    setViewMode(false);
+    setSelectedLog(null);
+  };
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -92,8 +104,76 @@ function AuditLogs() {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="filters-container">
+      {/* View Mode - Detail View */}
+      {viewMode && selectedLog ? (
+        <div className="detail-view">
+          <div className="detail-header">
+            <h2>Audit Log Details</h2>
+            <button className="btn-secondary" onClick={handleCancel}>
+              Cancel
+            </button>
+          </div>
+          <div className="detail-form">
+            <div className="form-row">
+              <div className="form-group">
+                <label>ID:</label>
+                <div className="readonly-field">{selectedLog.id}</div>
+              </div>
+              <div className="form-group">
+                <label>Timestamp:</label>
+                <div className="readonly-field">{formatTimestamp(selectedLog.timestamp)}</div>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Username:</label>
+                <div className="readonly-field">{selectedLog.username}</div>
+              </div>
+              <div className="form-group">
+                <label>Action:</label>
+                <div className="readonly-field">
+                  <span className="badge">{selectedLog.action}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Resource Type:</label>
+                <div className="readonly-field">{selectedLog.resourceType || '-'}</div>
+              </div>
+              <div className="form-group">
+                <label>Resource ID:</label>
+                <div className="readonly-field">{selectedLog.resourceId || '-'}</div>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>IP Address:</label>
+                <div className="readonly-field">{selectedLog.ipAddress || '-'}</div>
+              </div>
+              <div className="form-group">
+                <label>Status:</label>
+                <div className="readonly-field">
+                  <span className={`badge ${getStatusColor(selectedLog.status)}`}>
+                    {selectedLog.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Details:</label>
+              <div className="readonly-field details-field">{selectedLog.details || '-'}</div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Filters */}
+          <div className="filters-container">
         <div className="filter-group">
           <label htmlFor="username">Username:</label>
           <input
@@ -154,76 +234,82 @@ function AuditLogs() {
         </div>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+          {error && <div className="error-message">{error}</div>}
 
-      {loading ? (
-        <div className="loading">Loading audit logs...</div>
-      ) : (
-        <>
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Username</th>
-                  <th>Action</th>
-                  <th>Resource Type</th>
-                  <th>Resource ID</th>
-                  <th>IP Address</th>
-                  <th>Status</th>
-                  <th>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="text-center">No audit logs found</td>
-                  </tr>
-                ) : (
-                  logs.map((log) => (
-                    <tr key={log.id}>
-                      <td>{formatTimestamp(log.timestamp)}</td>
-                      <td>{log.username}</td>
-                      <td><span className="badge">{log.action}</span></td>
-                      <td>{log.resourceType || '-'}</td>
-                      <td className="text-truncate">{log.resourceId || '-'}</td>
-                      <td>{log.ipAddress || '-'}</td>
-                      <td>
-                        <span className={`badge ${getStatusColor(log.status)}`}>
-                          {log.status}
-                        </span>
-                      </td>
-                      <td className="text-truncate" title={log.details}>
-                        {log.details || '-'}
-                      </td>
+          {loading ? (
+            <div className="loading">Loading audit logs...</div>
+          ) : (
+            <>
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>Username</th>
+                      <th>Action</th>
+                      <th>Resource Type</th>
+                      <th>Resource ID</th>
+                      <th>IP Address</th>
+                      <th>Status</th>
+                      <th>Details</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {logs.length === 0 ? (
+                      <tr>
+                        <td colSpan="8" className="text-center">No audit logs found</td>
+                      </tr>
+                    ) : (
+                      logs.map((log) => (
+                        <tr
+                          key={log.id}
+                          onDoubleClick={() => handleView(log)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <td>{formatTimestamp(log.timestamp)}</td>
+                          <td>{log.username}</td>
+                          <td><span className="badge">{log.action}</span></td>
+                          <td>{log.resourceType || '-'}</td>
+                          <td className="text-truncate">{log.resourceId || '-'}</td>
+                          <td>{log.ipAddress || '-'}</td>
+                          <td>
+                            <span className={`badge ${getStatusColor(log.status)}`}>
+                              {log.status}
+                            </span>
+                          </td>
+                          <td className="text-truncate" title={log.details}>
+                            {log.details || '-'}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="pagination">
-              <button
-                className="btn-secondary"
-                onClick={() => setPage(Math.max(0, page - 1))}
-                disabled={page === 0}
-              >
-                Previous
-              </button>
-              <span className="page-info">
-                Page {page + 1} of {totalPages}
-              </span>
-              <button
-                className="btn-secondary"
-                onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                disabled={page >= totalPages - 1}
-              >
-                Next
-              </button>
-            </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="pagination">
+                  <button
+                    className="btn-secondary"
+                    onClick={() => setPage(Math.max(0, page - 1))}
+                    disabled={page === 0}
+                  >
+                    Previous
+                  </button>
+                  <span className="page-info">
+                    Page {page + 1} of {totalPages}
+                  </span>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+                    disabled={page >= totalPages - 1}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </>
       )}

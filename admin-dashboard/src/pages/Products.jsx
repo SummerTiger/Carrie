@@ -6,6 +6,8 @@ function Products() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [viewMode, setViewMode] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -47,7 +49,11 @@ function Products() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editingProduct) {
+      if (editMode && editingProduct) {
+        await productsAPI.update(editingProduct.id, formData);
+        setEditMode(false);
+        setEditingProduct(null);
+      } else if (editingProduct) {
         await productsAPI.update(editingProduct.id, formData);
       } else {
         await productsAPI.create(formData);
@@ -59,6 +65,31 @@ function Products() {
     } catch (err) {
       setError('Failed to save product');
     }
+  };
+
+  const handleView = (product) => {
+    setEditingProduct(product);
+    setFormData({
+      name: product.name || '',
+      category: product.category || '',
+      unitSize: product.unitSize || '',
+      basePrice: product.basePrice || '',
+      currentStock: product.currentStock || '',
+      minimumStock: product.minimumStock || '',
+      hstExempt: product.hstExempt || false,
+      active: product.active !== undefined ? product.active : true,
+      description: product.description || '',
+      barcode: product.barcode || '',
+      sku: product.sku || '',
+    });
+    setViewMode(true);
+    setEditMode(false);
+    setShowForm(false);
+  };
+
+  const handleEditClick = () => {
+    setViewMode(false);
+    setEditMode(true);
   };
 
   const handleEdit = (product) => {
@@ -77,6 +108,14 @@ function Products() {
       sku: product.sku || '',
     });
     setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setViewMode(false);
+    setEditMode(false);
+    setEditingProduct(null);
+    resetForm();
   };
 
   const handleDelete = async (id) => {
@@ -120,20 +159,25 @@ function Products() {
       <div className="content-card">
         <div className="card-header">
           <h2>Product List</h2>
-          <button
-            className="btn btn-primary"
-            onClick={() => {
-              setShowForm(!showForm);
-              setEditingProduct(null);
-              resetForm();
-            }}
-          >
-            {showForm ? 'Cancel' : 'Add Product'}
-          </button>
+          {!viewMode && !editMode && (
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setShowForm(!showForm);
+                setEditingProduct(null);
+                resetForm();
+              }}
+            >
+              {showForm ? 'Cancel' : 'Add Product'}
+            </button>
+          )}
         </div>
 
-        {showForm && (
+        {(showForm || viewMode || editMode) && (
           <form onSubmit={handleSubmit} className="product-form">
+            <h3 style={{ color: viewMode ? '#666' : editMode ? '#2563eb' : '#000' }}>
+              {viewMode ? '👁️ View Product (Read-Only)' : editMode ? '✏️ Edit Product' : '➕ New Product'}
+            </h3>
             <div className="form-row">
               <div className="form-group">
                 <label>Name *</label>
@@ -142,6 +186,7 @@ function Products() {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                   required
                 />
               </div>
@@ -152,6 +197,7 @@ function Products() {
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                   required
                 />
               </div>
@@ -165,6 +211,7 @@ function Products() {
                   name="unitSize"
                   value={formData.unitSize}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
               <div className="form-group">
@@ -175,6 +222,7 @@ function Products() {
                   name="basePrice"
                   value={formData.basePrice}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
             </div>
@@ -187,6 +235,7 @@ function Products() {
                   name="currentStock"
                   value={formData.currentStock}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
               <div className="form-group">
@@ -196,6 +245,7 @@ function Products() {
                   name="minimumStock"
                   value={formData.minimumStock}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
             </div>
@@ -208,6 +258,7 @@ function Products() {
                   name="barcode"
                   value={formData.barcode}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
               <div className="form-group">
@@ -217,6 +268,7 @@ function Products() {
                   name="sku"
                   value={formData.sku}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
             </div>
@@ -227,6 +279,7 @@ function Products() {
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
+                disabled={viewMode}
                 rows="3"
               />
             </div>
@@ -239,6 +292,7 @@ function Products() {
                     name="hstExempt"
                     checked={formData.hstExempt}
                     onChange={handleInputChange}
+                    disabled={viewMode}
                   />
                   HST Exempt
                 </label>
@@ -250,35 +304,59 @@ function Products() {
                     name="active"
                     checked={formData.active}
                     onChange={handleInputChange}
+                    disabled={viewMode}
                   />
                   Active
                 </label>
               </div>
             </div>
 
-            <button type="submit" className="btn btn-success">
-              {editingProduct ? 'Update Product' : 'Create Product'}
-            </button>
+            <div style={{ marginTop: '20px' }}>
+              {viewMode ? (
+                <>
+                  <button type="button" className="btn btn-primary" onClick={handleEditClick}>
+                    Edit
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={handleCancel} style={{ marginLeft: '10px' }}>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="submit" className="btn btn-success">
+                    {editMode ? 'Update Product' : editingProduct ? 'Update Product' : 'Create Product'}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={handleCancel} style={{ marginLeft: '10px' }}>
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
           </form>
         )}
 
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>HST</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((product) => (
-                <tr key={product.id}>
-                  <td>{product.name}</td>
+        {!viewMode && !editMode && !showForm && (
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>HST</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product) => (
+                  <tr
+                    key={product.id}
+                    onDoubleClick={() => handleView(product)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td>{product.name}</td>
                   <td>{product.category}</td>
                   <td>${product.basePrice?.toFixed(2)}</td>
                   <td>{product.currentStock || 0}</td>
@@ -313,7 +391,8 @@ function Products() {
               <p>Click "Add Product" to create your first product.</p>
             </div>
           )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

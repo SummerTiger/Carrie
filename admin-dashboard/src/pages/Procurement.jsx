@@ -7,8 +7,11 @@ function Procurement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [viewMode, setViewMode] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState(null);
   const [formData, setFormData] = useState({
-    purchaseDate: new Date().toISOString().split('T')[0],
+    purchaseDate: new Date().toISOString().slice(0, 16), // YYYY-MM-DDTHH:MM format
     supplier: '',
     supplierContact: '',
     invoiceNumber: '',
@@ -57,6 +60,7 @@ function Procurement() {
         {
           productId: '',
           quantity: 1,
+          packQuantity: 1,
           unitCost: 0,
           hstExempt: false,
         },
@@ -82,15 +86,84 @@ function Procurement() {
     });
   };
 
+  // Calculate unit price: pack cost / units per pack
+  const calculateUnitPrice = (item) => {
+    const unitCost = parseFloat(item.unitCost) || 0;
+    const packQuantity = parseInt(item.packQuantity) || 1;
+    return unitCost / packQuantity;
+  };
+
+  // Calculate item subtotal: pack cost * number of packs
+  const calculateItemSubtotal = (item) => {
+    const unitCost = parseFloat(item.unitCost) || 0;
+    const quantity = parseInt(item.quantity) || 0;
+    return unitCost * quantity;
+  };
+
+  // Calculate HST for an item
+  const calculateItemHST = (item) => {
+    if (item.hstExempt) return 0;
+    const subtotal = calculateItemSubtotal(item);
+    return subtotal * 0.13;
+  };
+
+  // Calculate item total with HST
+  const calculateItemTotal = (item) => {
+    return calculateItemSubtotal(item) + calculateItemHST(item);
+  };
+
+  // Calculate order totals
+  const calculateOrderTotals = () => {
+    const subtotal = formData.items.reduce((sum, item) => sum + calculateItemSubtotal(item), 0);
+    const totalHST = formData.items.reduce((sum, item) => sum + calculateItemHST(item), 0);
+    const total = subtotal + totalHST;
+    return { subtotal, totalHST, total };
+  };
+
+  const handleView = async (batch) => {
+    setSelectedBatch(batch);
+    setFormData({
+      purchaseDate: batch.purchaseDate.slice(0, 16),
+      supplier: batch.supplier,
+      supplierContact: batch.supplierContact || '',
+      invoiceNumber: batch.invoiceNumber || '',
+      notes: batch.notes || '',
+      items: batch.items.map(item => ({
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        packQuantity: item.packQuantity,
+        unitCost: item.unitCost,
+        hstExempt: item.hstExempt,
+      })),
+    });
+    setViewMode(true);
+    setEditMode(false);
+    setShowForm(false);
+  };
+
+  const handleEdit = () => {
+    console.log('handleEdit called - viewMode:', viewMode, 'editMode:', editMode);
+    setViewMode(false);
+    setEditMode(true);
+    console.log('After state update - viewMode should be false, editMode should be true');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await procurementAPI.create(formData);
-      setShowForm(false);
+      if (editMode && selectedBatch) {
+        await procurementAPI.update(selectedBatch.id, formData);
+        setEditMode(false);
+        setSelectedBatch(null);
+      } else {
+        await procurementAPI.create(formData);
+        setShowForm(false);
+      }
       resetForm();
       fetchBatches();
     } catch (err) {
-      setError('Failed to create procurement batch');
+      setError(editMode ? 'Failed to update procurement batch' : 'Failed to create procurement batch');
     }
   };
 
@@ -105,9 +178,17 @@ function Procurement() {
     }
   };
 
+  const handleCancel = () => {
+    setShowForm(false);
+    setViewMode(false);
+    setEditMode(false);
+    setSelectedBatch(null);
+    resetForm();
+  };
+
   const resetForm = () => {
     setFormData({
-      purchaseDate: new Date().toISOString().split('T')[0],
+      purchaseDate: new Date().toISOString().slice(0, 16),
       supplier: '',
       supplierContact: '',
       invoiceNumber: '',
@@ -130,28 +211,33 @@ function Procurement() {
       <div className="content-card">
         <div className="card-header">
           <h2>Purchase Orders</h2>
-          <button
-            className="btn btn-primary"
-            onClick={() => {
-              setShowForm(!showForm);
-              resetForm();
-            }}
-          >
-            {showForm ? 'Cancel' : 'New Purchase'}
-          </button>
+          {!viewMode && !editMode && (
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setShowForm(!showForm);
+                resetForm();
+              }}
+            >
+              {showForm ? 'Cancel' : 'New Purchase'}
+            </button>
+          )}
         </div>
 
-        {showForm && (
+        {(showForm || viewMode || editMode) && (
           <form onSubmit={handleSubmit} className="machine-form">
-            <h3>Purchase Details</h3>
+            <h3 style={{ color: viewMode ? '#666' : editMode ? '#2563eb' : '#000' }}>
+              {viewMode ? '👁️ View Purchase Order (Read-Only)' : editMode ? '✏️ Edit Purchase Order' : '➕ New Purchase Order'}
+            </h3>
             <div className="form-row">
               <div className="form-group">
                 <label>Purchase Date *</label>
                 <input
-                  type="date"
+                  type="datetime-local"
                   name="purchaseDate"
                   value={formData.purchaseDate}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                   required
                 />
               </div>
@@ -162,6 +248,7 @@ function Procurement() {
                   name="invoiceNumber"
                   value={formData.invoiceNumber}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
             </div>
@@ -174,6 +261,7 @@ function Procurement() {
                   name="supplier"
                   value={formData.supplier}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                   required
                 />
               </div>
@@ -184,6 +272,7 @@ function Procurement() {
                   name="supplierContact"
                   value={formData.supplierContact}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
             </div>
@@ -194,129 +283,212 @@ function Procurement() {
                 name="notes"
                 value={formData.notes}
                 onChange={handleInputChange}
+                disabled={viewMode}
                 rows="3"
               />
             </div>
 
             <h3>Items</h3>
             {formData.items.map((item, index) => (
-              <div key={index} className="form-row" style={{ alignItems: 'flex-end', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '10px' }}>
-                <div className="form-group">
-                  <label>Product *</label>
-                  <select
-                    value={item.productId}
-                    onChange={(e) => updateItem(index, 'productId', e.target.value)}
-                    required
-                  >
-                    <option value="">Select Product</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Quantity *</label>
-                  <input
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value))}
-                    min="1"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Unit Cost *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={item.unitCost}
-                    onChange={(e) => updateItem(index, 'unitCost', parseFloat(e.target.value))}
-                    min="0.01"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>
+              <div key={index} style={{ borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '15px' }}>
+                <div className="form-row" style={{ alignItems: 'flex-end' }}>
+                  <div className="form-group">
+                    <label>Product *</label>
+                    {viewMode ? (
+                      <input
+                        type="text"
+                        value={item.productName || ''}
+                        disabled
+                      />
+                    ) : (
+                      <select
+                        value={item.productId}
+                        onChange={(e) => updateItem(index, 'productId', e.target.value)}
+                        required
+                      >
+                        <option value="">Select Product</option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label>Packs *</label>
                     <input
-                      type="checkbox"
-                      checked={item.hstExempt}
-                      onChange={(e) => updateItem(index, 'hstExempt', e.target.checked)}
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value))}
+                      disabled={viewMode}
+                      min="1"
+                      required
                     />
-                    HST Exempt
-                  </label>
+                  </div>
+                  <div className="form-group">
+                    <label>Units/Pack *</label>
+                    <input
+                      type="number"
+                      value={item.packQuantity}
+                      onChange={(e) => updateItem(index, 'packQuantity', parseInt(e.target.value))}
+                      disabled={viewMode}
+                      min="1"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Pack Cost *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={item.unitCost}
+                      onChange={(e) => updateItem(index, 'unitCost', parseFloat(e.target.value))}
+                      disabled={viewMode}
+                      min="0.01"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={item.hstExempt}
+                        onChange={(e) => updateItem(index, 'hstExempt', e.target.checked)}
+                        disabled={viewMode}
+                      />
+                      HST Exempt
+                    </label>
+                  </div>
+                  {!viewMode && (
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      onClick={() => removeItem(index)}
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  onClick={() => removeItem(index)}
-                >
-                  Remove
-                </button>
+                {(item.unitCost && item.quantity && item.packQuantity) && (
+                  <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px', fontSize: '14px' }}>
+                    <strong>Calculations:</strong>
+                    <span style={{ marginLeft: '15px' }}>Unit Price: ${calculateUnitPrice(item).toFixed(4)}</span>
+                    <span style={{ marginLeft: '15px' }}>Subtotal: ${calculateItemSubtotal(item).toFixed(2)}</span>
+                    <span style={{ marginLeft: '15px' }}>HST (13%): ${calculateItemHST(item).toFixed(2)}</span>
+                    <span style={{ marginLeft: '15px' }}><strong>Total: ${calculateItemTotal(item).toFixed(2)}</strong></span>
+                  </div>
+                )}
               </div>
             ))}
 
-            <button type="button" className="btn btn-secondary" onClick={addItem}>
-              Add Item
-            </button>
+            {!viewMode && (
+              <button type="button" className="btn btn-secondary" onClick={addItem}>
+                Add Item
+              </button>
+            )}
 
-            <button type="submit" className="btn btn-success" style={{ marginLeft: '10px' }}>
-              Create Purchase Order
-            </button>
+            {formData.items.length > 0 && (
+              <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#e8f5e9', borderRadius: '4px', border: '1px solid #4caf50' }}>
+                <h4 style={{ marginTop: 0, marginBottom: '10px' }}>Order Totals</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                  <span>Subtotal:</span>
+                  <strong>${calculateOrderTotals().subtotal.toFixed(2)}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                  <span>HST (13%):</span>
+                  <strong>${calculateOrderTotals().totalHST.toFixed(2)}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '2px solid #4caf50', paddingTop: '10px', marginTop: '10px', fontSize: '18px' }}>
+                  <span><strong>Total:</strong></span>
+                  <strong style={{ color: '#2e7d32' }}>${calculateOrderTotals().total.toFixed(2)}</strong>
+                </div>
+              </div>
+            )}
+
+            <div style={{ marginTop: '20px' }}>
+              {viewMode ? (
+                <>
+                  <button type="button" className="btn btn-primary" onClick={handleEdit}>
+                    Edit
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={handleCancel} style={{ marginLeft: '10px' }}>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="submit" className="btn btn-success">
+                    {editMode ? 'Update Purchase Order' : 'Create Purchase Order'}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={handleCancel} style={{ marginLeft: '10px' }}>
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
           </form>
         )}
 
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Supplier</th>
-                <th>Invoice #</th>
-                <th>Items</th>
-                <th>Subtotal</th>
-                <th>HST</th>
-                <th>Total</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {batches.map((batch) => (
-                <tr key={batch.id}>
-                  <td>{new Date(batch.purchaseDate).toLocaleDateString()}</td>
-                  <td>
-                    <strong>{batch.supplier}</strong>
-                    {batch.supplierContact && (
-                      <>
-                        <br />
-                        <small>{batch.supplierContact}</small>
-                      </>
-                    )}
-                  </td>
-                  <td>{batch.invoiceNumber || '-'}</td>
-                  <td>{batch.totalItemsCount || 0} items</td>
-                  <td>${batch.subtotal?.toFixed(2) || '0.00'}</td>
-                  <td>${batch.totalHst?.toFixed(2) || '0.00'}</td>
-                  <td><strong>${batch.totalAmount?.toFixed(2) || '0.00'}</strong></td>
-                  <td className="action-buttons">
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => handleDelete(batch.id)}
-                    >
-                      Delete
-                    </button>
-                  </td>
+        {!viewMode && !editMode && !showForm && (
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Supplier</th>
+                  <th>Invoice #</th>
+                  <th>Items</th>
+                  <th>Subtotal</th>
+                  <th>HST</th>
+                  <th>Total</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {batches.map((batch) => (
+                  <tr
+                    key={batch.id}
+                    onDoubleClick={() => handleView(batch)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td>{new Date(batch.purchaseDate).toLocaleDateString()}</td>
+                    <td>
+                      <strong>{batch.supplier}</strong>
+                      {batch.supplierContact && (
+                        <>
+                          <br />
+                          <small>{batch.supplierContact}</small>
+                        </>
+                      )}
+                    </td>
+                    <td>{batch.invoiceNumber || '-'}</td>
+                    <td>{batch.totalItemsCount || 0} items</td>
+                    <td>${batch.subtotal?.toFixed(2) || '0.00'}</td>
+                    <td>${batch.totalHst?.toFixed(2) || '0.00'}</td>
+                    <td><strong>${batch.totalAmount?.toFixed(2) || '0.00'}</strong></td>
+                    <td className="action-buttons">
+                      <button
+                        className="btn btn-danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(batch.id);
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-          {batches.length === 0 && (
-            <div className="empty-state">
-              <h3>No purchase orders found</h3>
-              <p>Click "New Purchase" to create your first purchase order.</p>
-            </div>
-          )}
-        </div>
+            {batches.length === 0 && (
+              <div className="empty-state">
+                <h3>No purchase orders found</h3>
+                <p>Click "New Purchase" to create your first purchase order.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

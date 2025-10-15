@@ -6,6 +6,8 @@ function VendingMachines() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [viewMode, setViewMode] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [editingMachine, setEditingMachine] = useState(null);
   const [formData, setFormData] = useState({
     machineId: '',
@@ -70,7 +72,11 @@ function VendingMachines() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editingMachine) {
+      if (editMode && editingMachine) {
+        await machinesAPI.update(editingMachine.id, formData);
+        setEditMode(false);
+        setEditingMachine(null);
+      } else if (editingMachine) {
         await machinesAPI.update(editingMachine.id, formData);
       } else {
         await machinesAPI.create(formData);
@@ -82,6 +88,42 @@ function VendingMachines() {
     } catch (err) {
       setError('Failed to save vending machine');
     }
+  };
+
+  const handleView = (machine) => {
+    setEditingMachine(machine);
+    setFormData({
+      machineId: machine.machineId || '',
+      machineName: machine.machineName || '',
+      brand: machine.brand || '',
+      model: machine.model || '',
+      modelNumber: machine.modelNumber || '',
+      serialNumber: machine.serialNumber || '',
+      datePurchased: machine.datePurchased || '',
+      purchasedPrice: machine.purchasedPrice || '',
+      condition: machine.condition || '',
+      deployed: machine.deployed || false,
+      status: machine.status || 'ACTIVE',
+      hasCashBillReader: machine.hasCashBillReader || false,
+      hasCashlessPos: machine.hasCashlessPos || false,
+      hasCoinChanger: machine.hasCoinChanger || false,
+      active: machine.active !== undefined ? machine.active : true,
+      location: {
+        name: machine.location?.name || '',
+        address: machine.location?.address || '',
+        city: machine.location?.city || '',
+        province: machine.location?.province || '',
+        postalCode: machine.location?.postalCode || '',
+      },
+    });
+    setViewMode(true);
+    setEditMode(false);
+    setShowForm(false);
+  };
+
+  const handleEditClick = () => {
+    setViewMode(false);
+    setEditMode(true);
   };
 
   const handleEdit = (machine) => {
@@ -111,6 +153,14 @@ function VendingMachines() {
       },
     });
     setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setViewMode(false);
+    setEditMode(false);
+    setEditingMachine(null);
+    resetForm();
   };
 
   const handleDelete = async (id) => {
@@ -165,20 +215,25 @@ function VendingMachines() {
       <div className="content-card">
         <div className="card-header">
           <h2>Machine List</h2>
-          <button
-            className="btn btn-primary"
-            onClick={() => {
-              setShowForm(!showForm);
-              setEditingMachine(null);
-              resetForm();
-            }}
-          >
-            {showForm ? 'Cancel' : 'Add Machine'}
-          </button>
+          {!viewMode && !editMode && (
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setShowForm(!showForm);
+                setEditingMachine(null);
+                resetForm();
+              }}
+            >
+              {showForm ? 'Cancel' : 'Add Machine'}
+            </button>
+          )}
         </div>
 
-        {showForm && (
+        {(showForm || viewMode || editMode) && (
           <form onSubmit={handleSubmit} className="machine-form">
+            <h3 style={{ color: viewMode ? '#666' : editMode ? '#2563eb' : '#000' }}>
+              {viewMode ? '👁️ View Machine (Read-Only)' : editMode ? '✏️ Edit Machine' : '➕ New Machine'}
+            </h3>
             <h3>Machine Details</h3>
             <div className="form-row">
               <div className="form-group">
@@ -188,6 +243,7 @@ function VendingMachines() {
                   name="machineId"
                   value={formData.machineId}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                   required
                 />
               </div>
@@ -198,6 +254,7 @@ function VendingMachines() {
                   name="machineName"
                   value={formData.machineName}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
             </div>
@@ -210,6 +267,7 @@ function VendingMachines() {
                   name="brand"
                   value={formData.brand}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                   required
                 />
               </div>
@@ -220,6 +278,7 @@ function VendingMachines() {
                   name="model"
                   value={formData.model}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                   required
                 />
               </div>
@@ -233,6 +292,7 @@ function VendingMachines() {
                   name="modelNumber"
                   value={formData.modelNumber}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
               <div className="form-group">
@@ -242,6 +302,7 @@ function VendingMachines() {
                   name="serialNumber"
                   value={formData.serialNumber}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
             </div>
@@ -255,6 +316,7 @@ function VendingMachines() {
                   name="datePurchased"
                   value={formData.datePurchased}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
               <div className="form-group">
@@ -265,6 +327,7 @@ function VendingMachines() {
                   name="purchasedPrice"
                   value={formData.purchasedPrice}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
             </div>
@@ -276,6 +339,7 @@ function VendingMachines() {
                   name="condition"
                   value={formData.condition}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 >
                   <option value="">Select Condition</option>
                   <option value="NEW">New</option>
@@ -289,6 +353,7 @@ function VendingMachines() {
                   name="status"
                   value={formData.status}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 >
                   <option value="ACTIVE">Active</option>
                   <option value="BROKEN">Broken</option>
@@ -307,6 +372,7 @@ function VendingMachines() {
                     name="hasCashBillReader"
                     checked={formData.hasCashBillReader}
                     onChange={handleInputChange}
+                    disabled={viewMode}
                   />
                   Cash Bill Reader
                 </label>
@@ -318,6 +384,7 @@ function VendingMachines() {
                     name="hasCashlessPos"
                     checked={formData.hasCashlessPos}
                     onChange={handleInputChange}
+                    disabled={viewMode}
                   />
                   Cashless POS
                 </label>
@@ -329,6 +396,7 @@ function VendingMachines() {
                     name="hasCoinChanger"
                     checked={formData.hasCoinChanger}
                     onChange={handleInputChange}
+                    disabled={viewMode}
                   />
                   Coin Changer
                 </label>
@@ -343,6 +411,7 @@ function VendingMachines() {
                     name="deployed"
                     checked={formData.deployed}
                     onChange={handleInputChange}
+                    disabled={viewMode}
                   />
                   Deployed
                 </label>
@@ -354,6 +423,7 @@ function VendingMachines() {
                     name="active"
                     checked={formData.active}
                     onChange={handleInputChange}
+                    disabled={viewMode}
                   />
                   Active
                 </label>
@@ -368,6 +438,7 @@ function VendingMachines() {
                 name="location.name"
                 value={formData.location.name}
                 onChange={handleInputChange}
+                disabled={viewMode}
               />
             </div>
 
@@ -378,6 +449,7 @@ function VendingMachines() {
                 name="location.address"
                 value={formData.location.address}
                 onChange={handleInputChange}
+                disabled={viewMode}
               />
             </div>
 
@@ -389,6 +461,7 @@ function VendingMachines() {
                   name="location.city"
                   value={formData.location.city}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
               <div className="form-group">
@@ -398,6 +471,7 @@ function VendingMachines() {
                   name="location.province"
                   value={formData.location.province}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
               <div className="form-group">
@@ -407,33 +481,57 @@ function VendingMachines() {
                   name="location.postalCode"
                   value={formData.location.postalCode}
                   onChange={handleInputChange}
+                  disabled={viewMode}
                 />
               </div>
             </div>
 
-            <button type="submit" className="btn btn-success">
-              {editingMachine ? 'Update Machine' : 'Create Machine'}
-            </button>
+            <div style={{ marginTop: '20px' }}>
+              {viewMode ? (
+                <>
+                  <button type="button" className="btn btn-primary" onClick={handleEditClick}>
+                    Edit
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={handleCancel} style={{ marginLeft: '10px' }}>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="submit" className="btn btn-success">
+                    {editMode ? 'Update Machine' : editingMachine ? 'Update Machine' : 'Create Machine'}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={handleCancel} style={{ marginLeft: '10px' }}>
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
           </form>
         )}
 
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Machine ID</th>
-                <th>Brand / Model</th>
-                <th>Serial #</th>
-                <th>Location</th>
-                <th>Condition</th>
-                <th>Status</th>
-                <th>Deployed</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {machines.map((machine) => (
-                <tr key={machine.id}>
+        {!viewMode && !editMode && !showForm && (
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Machine ID</th>
+                  <th>Brand / Model</th>
+                  <th>Serial #</th>
+                  <th>Location</th>
+                  <th>Condition</th>
+                  <th>Status</th>
+                  <th>Deployed</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {machines.map((machine) => (
+                  <tr
+                    key={machine.id}
+                    onDoubleClick={() => handleView(machine)}
+                    style={{ cursor: 'pointer' }}
+                  >
                   <td>
                     <strong>{machine.machineId}</strong>
                     {machine.machineName && (
@@ -501,7 +599,8 @@ function VendingMachines() {
               <p>Click "Add Machine" to create your first vending machine.</p>
             </div>
           )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

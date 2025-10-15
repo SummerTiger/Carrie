@@ -14,6 +14,7 @@ public record ProcurementItemDto(
     UUID productId,
     String productName,
     @NotNull @Min(1) Integer quantity,
+    @NotNull @Min(1) Integer packQuantity,
     @NotNull @DecimalMin("0.01") BigDecimal unitCost,
     BigDecimal hstAmount,
     boolean hstExempt,

@@ -98,6 +98,11 @@ public class ProcurementBatch {
         this.totalAmount = this.subtotal.add(this.totalHst);
     }
 
+    @PostLoad
+    public void recalculateTotalsAfterLoad() {
+        recalculateTotals();
+    }
+
     public int getTotalItemsCount() {
         return items.stream()
             .mapToInt(ProcurementItem::getQuantity)

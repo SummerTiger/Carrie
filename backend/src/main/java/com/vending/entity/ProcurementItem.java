@@ -40,6 +40,12 @@ public class ProcurementItem {
     @Column(nullable = false)
     private Integer quantity;
 
+    @NotNull(message = "Pack quantity is required")
+    @Min(value = 1, message = "Pack quantity must be at least 1")
+    @Column(name = "pack_quantity", nullable = false)
+    @Builder.Default
+    private Integer packQuantity = 1;
+
     @NotNull(message = "Unit cost is required")
     @DecimalMin(value = "0.01", message = "Unit cost must be greater than 0")
     @Column(name = "unit_cost", nullable = false, precision = 10, scale = 2)
