@@ -8,8 +8,17 @@ function VendingMachines() {
   const [showForm, setShowForm] = useState(false);
   const [editingMachine, setEditingMachine] = useState(null);
   const [formData, setFormData] = useState({
+    machineId: '',
+    machineName: '',
     brand: '',
     model: '',
+    modelNumber: '',
+    serialNumber: '',
+    datePurchased: '',
+    purchasedPrice: '',
+    condition: '',
+    deployed: false,
+    status: 'ACTIVE',
     hasCashBillReader: false,
     hasCashlessPos: false,
     hasCoinChanger: false,
@@ -78,8 +87,17 @@ function VendingMachines() {
   const handleEdit = (machine) => {
     setEditingMachine(machine);
     setFormData({
+      machineId: machine.machineId || '',
+      machineName: machine.machineName || '',
       brand: machine.brand || '',
       model: machine.model || '',
+      modelNumber: machine.modelNumber || '',
+      serialNumber: machine.serialNumber || '',
+      datePurchased: machine.datePurchased || '',
+      purchasedPrice: machine.purchasedPrice || '',
+      condition: machine.condition || '',
+      deployed: machine.deployed || false,
+      status: machine.status || 'ACTIVE',
       hasCashBillReader: machine.hasCashBillReader || false,
       hasCashlessPos: machine.hasCashlessPos || false,
       hasCoinChanger: machine.hasCoinChanger || false,
@@ -108,8 +126,17 @@ function VendingMachines() {
 
   const resetForm = () => {
     setFormData({
+      machineId: '',
+      machineName: '',
       brand: '',
       model: '',
+      modelNumber: '',
+      serialNumber: '',
+      datePurchased: '',
+      purchasedPrice: '',
+      condition: '',
+      deployed: false,
+      status: 'ACTIVE',
       hasCashBillReader: false,
       hasCashlessPos: false,
       hasCoinChanger: false,
@@ -155,6 +182,28 @@ function VendingMachines() {
             <h3>Machine Details</h3>
             <div className="form-row">
               <div className="form-group">
+                <label>Machine ID *</label>
+                <input
+                  type="text"
+                  name="machineId"
+                  value={formData.machineId}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Machine Name</label>
+                <input
+                  type="text"
+                  name="machineName"
+                  value={formData.machineName}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
                 <label>Brand *</label>
                 <input
                   type="text"
@@ -173,6 +222,79 @@ function VendingMachines() {
                   onChange={handleInputChange}
                   required
                 />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Model Number</label>
+                <input
+                  type="text"
+                  name="modelNumber"
+                  value={formData.modelNumber}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label>Serial Number</label>
+                <input
+                  type="text"
+                  name="serialNumber"
+                  value={formData.serialNumber}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+
+            <h3>Purchase Information</h3>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Date Purchased</label>
+                <input
+                  type="date"
+                  name="datePurchased"
+                  value={formData.datePurchased}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label>Purchased Price</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  name="purchasedPrice"
+                  value={formData.purchasedPrice}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Condition</label>
+                <select
+                  name="condition"
+                  value={formData.condition}
+                  onChange={handleInputChange}
+                >
+                  <option value="">Select Condition</option>
+                  <option value="NEW">New</option>
+                  <option value="USED">Used</option>
+                  <option value="REFURBISHED">Refurbished</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Status</label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                >
+                  <option value="ACTIVE">Active</option>
+                  <option value="BROKEN">Broken</option>
+                  <option value="INACTIVE">Inactive</option>
+                  <option value="SOLD">Sold</option>
+                </select>
               </div>
             </div>
 
@@ -209,6 +331,20 @@ function VendingMachines() {
                     onChange={handleInputChange}
                   />
                   Coin Changer
+                </label>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    name="deployed"
+                    checked={formData.deployed}
+                    onChange={handleInputChange}
+                  />
+                  Deployed
                 </label>
               </div>
               <div className="form-group">
@@ -285,32 +421,59 @@ function VendingMachines() {
           <table>
             <thead>
               <tr>
-                <th>Brand</th>
-                <th>Model</th>
+                <th>Machine ID</th>
+                <th>Brand / Model</th>
+                <th>Serial #</th>
                 <th>Location</th>
-                <th>Features</th>
+                <th>Condition</th>
                 <th>Status</th>
+                <th>Deployed</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {machines.map((machine) => (
                 <tr key={machine.id}>
-                  <td>{machine.brand}</td>
-                  <td>{machine.model}</td>
                   <td>
-                    {machine.location?.name || 'No location'}
+                    <strong>{machine.machineId}</strong>
+                    {machine.machineName && (
+                      <>
+                        <br />
+                        <small>{machine.machineName}</small>
+                      </>
+                    )}
+                  </td>
+                  <td>
+                    {machine.brand}
+                    <br />
+                    <small>{machine.model}</small>
+                  </td>
+                  <td>
+                    <small>{machine.serialNumber || '-'}</small>
+                  </td>
+                  <td>
+                    {machine.location?.name || machine.location?.city || 'No location'}
                     <br />
                     <small>{machine.location?.city}, {machine.location?.province}</small>
                   </td>
                   <td>
-                    {machine.hasCashBillReader && <span className="badge">Bill Reader</span>}
-                    {machine.hasCashlessPos && <span className="badge">POS</span>}
-                    {machine.hasCoinChanger && <span className="badge">Coin Changer</span>}
+                    {machine.condition ? (
+                      <span className="badge">{machine.condition}</span>
+                    ) : '-'}
                   </td>
                   <td>
-                    <span className={machine.active ? 'badge-success' : 'badge-danger'}>
-                      {machine.active ? 'Active' : 'Inactive'}
+                    <span className={
+                      machine.status === 'ACTIVE' ? 'badge-success' :
+                      machine.status === 'BROKEN' ? 'badge-danger' :
+                      machine.status === 'SOLD' ? 'badge-warning' :
+                      'badge-secondary'
+                    }>
+                      {machine.status}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={machine.deployed ? 'badge-success' : 'badge-secondary'}>
+                      {machine.deployed ? 'Yes' : 'No'}
                     </span>
                   </td>
                   <td className="action-buttons">

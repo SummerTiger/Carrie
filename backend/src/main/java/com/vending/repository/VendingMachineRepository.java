@@ -53,4 +53,8 @@ public interface VendingMachineRepository extends JpaRepository<VendingMachine, 
             @Param("city") String city, @Param("active") Boolean active, Pageable pageable);
 
     Page<VendingMachine> findByActive(Boolean active, Pageable pageable);
+
+    Optional<VendingMachine> findByMachineId(String machineId);
+
+    boolean existsByMachineId(String machineId);
 }

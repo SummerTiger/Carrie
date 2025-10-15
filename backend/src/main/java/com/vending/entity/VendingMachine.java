@@ -27,6 +27,15 @@ public class VendingMachine {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @NotBlank(message = "Machine ID is required")
+    @Size(min = 1, max = 50, message = "Machine ID must be between 1 and 50 characters")
+    @Column(name = "machine_id", unique = true, nullable = false)
+    private String machineId;
+
+    @Size(max = 200, message = "Machine name must not exceed 200 characters")
+    @Column(name = "machine_name")
+    private String machineName;
+
     @NotBlank(message = "Brand is required")
     @Size(min = 1, max = 100, message = "Brand must be between 1 and 100 characters")
     @Column(nullable = false)
@@ -36,6 +45,34 @@ public class VendingMachine {
     @Size(min = 1, max = 100, message = "Model must be between 1 and 100 characters")
     @Column(nullable = false)
     private String model;
+
+    @Size(max = 100, message = "Model number must not exceed 100 characters")
+    @Column(name = "model_number")
+    private String modelNumber;
+
+    @Size(max = 100, message = "Serial number must not exceed 100 characters")
+    @Column(name = "serial_number")
+    private String serialNumber;
+
+    @Column(name = "date_purchased")
+    private java.time.LocalDate datePurchased;
+
+    @Column(name = "purchased_price", precision = 10, scale = 2)
+    private java.math.BigDecimal purchasedPrice;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "condition")
+    private MachineCondition condition;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deployed = false;
+
+    @NotNull(message = "Status is required")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private MachineStatus status = MachineStatus.ACTIVE;
 
     @Column(name = "has_cash_bill_reader")
     private boolean hasCashBillReader;
@@ -110,5 +147,18 @@ public class VendingMachine {
     public void removeProductPrice(MachineProductPrice price) {
         productPrices.remove(price);
         price.setMachine(null);
+    }
+
+    public enum MachineCondition {
+        NEW,
+        USED,
+        REFURBISHED
+    }
+
+    public enum MachineStatus {
+        ACTIVE,
+        BROKEN,
+        INACTIVE,
+        SOLD
     }
 }
