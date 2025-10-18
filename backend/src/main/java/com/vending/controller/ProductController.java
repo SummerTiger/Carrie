@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -27,6 +28,8 @@ public class ProductController {
     @Autowired
     private ProductRepository productRepository;
 
+    // Security: Read access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @GetMapping
     public ResponseEntity<?> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
@@ -77,6 +80,8 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
+    // Security: Read access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable UUID id) {
         Product product = productRepository.findById(id)
@@ -84,16 +89,22 @@ public class ProductController {
         return ResponseEntity.ok(product);
     }
 
+    // Security: Read access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @GetMapping("/active")
     public ResponseEntity<List<Product>> getActiveProducts() {
         return ResponseEntity.ok(productRepository.findByActiveTrue());
     }
 
+    // Security: Read access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @GetMapping("/category/{category}")
     public ResponseEntity<List<Product>> getProductsByCategory(@PathVariable String category) {
         return ResponseEntity.ok(productRepository.findByCategoryAndActiveTrue(category));
     }
 
+    // Security: Write access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @PostMapping
     public ResponseEntity<Product> createProduct(@Valid @RequestBody Product product) {
         // Check for duplicate name
@@ -115,6 +126,8 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
+    // Security: Write access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @PutMapping("/{id}")
     public ResponseEntity<Product> updateProduct(@PathVariable UUID id, @Valid @RequestBody Product productUpdate) {
         Product product = productRepository.findById(id)
@@ -153,6 +166,8 @@ public class ProductController {
         return ResponseEntity.ok(productRepository.save(product));
     }
 
+    // Security: Write access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable UUID id) {
         if (!productRepository.existsById(id)) {

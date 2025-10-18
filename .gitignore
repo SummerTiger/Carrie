@@ -89,3 +89,4 @@ logs/
 # Application specific
 application-local.yml
 application-dev.yml
+backend/uploads/
