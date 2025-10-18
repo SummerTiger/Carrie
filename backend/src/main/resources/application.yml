@@ -74,6 +74,9 @@ app:
   security:
     max-failed-login-attempts: 5
     account-lockout-duration-minutes: 30
+    rate-limit:
+      login-requests-per-minute: 10  # Max 10 login attempts per minute per IP
+      login-requests-window-seconds: 60  # 1 minute window
 
   inventory:
     low-stock-threshold: 0.20 # 20%

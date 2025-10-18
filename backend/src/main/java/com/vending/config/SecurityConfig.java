@@ -33,6 +33,19 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
+            // Security: XSS Protection Headers (P1-5)
+            .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp
+                    .policyDirectives("default-src 'self'; " +
+                                    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+                                    "style-src 'self' 'unsafe-inline'; " +
+                                    "img-src 'self' data: blob:; " +
+                                    "font-src 'self' data:; " +
+                                    "connect-src 'self'"))
+                .xssProtection(xss -> xss.headerValue("1; mode=block"))
+                .contentTypeOptions(contentType -> contentType.disable())
+                .frameOptions(frame -> frame.deny())
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login", "/api/auth/refresh",
                                  "/api/health", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()

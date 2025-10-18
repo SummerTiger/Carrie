@@ -9,9 +9,12 @@ import com.vending.repository.UserRepository;
 import com.vending.security.JwtTokenProvider;
 import com.vending.service.AuditLogService;
 import com.vending.service.LoginAttemptService;
+import com.vending.service.RateLimitService;
 import com.vending.service.RefreshTokenService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -43,6 +46,9 @@ public class AuthController {
     private LoginAttemptService loginAttemptService;
 
     @Autowired
+    private RateLimitService rateLimitService;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -52,8 +58,23 @@ public class AuthController {
     private AuditLogService auditLogService;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest,
+                                               HttpServletRequest request) {
         try {
+            // Security: Rate limiting - Check if IP has exceeded login attempts
+            String ipAddress = getClientIpAddress(request);
+            if (!rateLimitService.tryConsume(ipAddress)) {
+                auditLogService.logFailure(
+                        AuditLog.ACTION_LOGIN_FAILED,
+                        AuditLog.RESOURCE_USER,
+                        loginRequest.username(),
+                        "Rate limit exceeded from IP: " + ipAddress,
+                        "Too many login attempts"
+                );
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                        .body(null);
+            }
+
             // Check if account is locked before attempting authentication
             User user = userRepository.findByUsername(loginRequest.username()).orElse(null);
             if (user != null && loginAttemptService.isAccountLocked(user)) {
@@ -78,12 +99,16 @@ public class AuthController {
             // Record successful login
             loginAttemptService.loginSucceeded(loginRequest.username());
 
+            // Security: Reset rate limit for this IP after successful login
+            String ipAddress = getClientIpAddress(request);
+            rateLimitService.resetRateLimit(ipAddress);
+
             // Log successful login
             auditLogService.log(
                     AuditLog.ACTION_LOGIN,
                     AuditLog.RESOURCE_USER,
                     userDetails.getId().toString(),
-                    "User logged in successfully"
+                    "User logged in successfully from IP: " + ipAddress
             );
 
             Set<String> roles = userDetails.getAuthorities().stream()
@@ -206,5 +231,24 @@ public class AuthController {
             }
         }
         return ResponseEntity.badRequest().body("Invalid token");
+    }
+
+    /**
+     * Extract client IP address from request, considering proxy headers.
+     * Checks X-Forwarded-For, X-Real-IP headers for proxied requests.
+     */
+    private String getClientIpAddress(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            // X-Forwarded-For can contain multiple IPs; take the first one
+            return xForwardedFor.split(",")[0].trim();
+        }
+
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty()) {
+            return xRealIp;
+        }
+
+        return request.getRemoteAddr();
     }
 }
