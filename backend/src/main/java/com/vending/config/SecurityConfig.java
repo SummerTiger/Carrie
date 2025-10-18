@@ -33,7 +33,14 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/login", "/api/auth/refresh",
+                                 "/api/health", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()
+                .requestMatchers("/api/audit-logs/**").hasRole("ADMIN")
+                .requestMatchers("/api/products/**", "/api/procurement/**",
+                                 "/api/machines/**", "/api/files/**").hasAnyRole("ADMIN", "MANAGER")
+                .anyRequest().authenticated()
+            )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -54,8 +61,10 @@ public class SecurityConfig {
         return source;
     }
 
-    // NOTE: Security is currently DISABLED (permitAll) to allow Swagger UI access.
-    // TODO: Re-enable with proper JWT-based authentication once frontend is ready.
+    // NOTE: JWT-based authentication is ENABLED.
+    // Public endpoints: /api/auth/*, /api/health, /swagger-ui/**, /v3/api-docs/**
+    // Admin-only: /api/audit-logs/**
+    // ADMIN/MANAGER: /api/products/**, /api/procurement/**, /api/machines/**, /api/files/**
 
     @Bean
     public PasswordEncoder passwordEncoder() {

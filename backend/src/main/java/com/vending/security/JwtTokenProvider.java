@@ -24,6 +24,14 @@ public class JwtTokenProvider {
     private long refreshTokenDurationMs;
 
     private SecretKey getSigningKey() {
+        // Security: Validate JWT secret is strong enough (minimum 64 characters for HS512)
+        if (jwtSecret == null || jwtSecret.length() < 64) {
+            throw new IllegalStateException(
+                "JWT secret must be at least 64 characters long. " +
+                "Set JWT_SECRET environment variable with a strong secret key."
+            );
+        }
+
         byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }

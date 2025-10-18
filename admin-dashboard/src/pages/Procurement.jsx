@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { procurementAPI, productsAPI } from '../services/api';
 
+// Security: Use environment variable for API URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+
 function Procurement() {
   const [batches, setBatches] = useState([]);
   const [products, setProducts] = useState([]);
@@ -195,7 +198,7 @@ function Procurement() {
         fileFormData.append('file', file);
         fileFormData.append('category', 'receipt');
 
-        const response = await fetch('http://localhost:8080/api/files/upload', {
+        const response = await fetch(`${API_BASE_URL}/files/upload`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -236,7 +239,7 @@ function Procurement() {
     const image = formData.receiptImages[index];
     try {
       // Delete from server
-      await fetch(`http://localhost:8080${image.imageUrl}`, {
+      await fetch(`${API_BASE_URL.replace('/api', '')}${image.imageUrl}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -489,7 +492,7 @@ function Procurement() {
                   {formData.receiptImages.map((image, index) => (
                     <div key={index} style={{ position: 'relative', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
                       <img
-                        src={`http://localhost:8080${image.imageUrl}`}
+                        src={`${API_BASE_URL.replace('/api', '')}${image.imageUrl}`}
                         alt={`Receipt ${index + 1}`}
                         style={{ width: '100%', height: '150px', objectFit: 'cover' }}
                       />
