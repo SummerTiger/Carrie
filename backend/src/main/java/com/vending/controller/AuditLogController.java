@@ -23,6 +23,8 @@ public class AuditLogController {
     @Autowired
     private AuditLogService auditLogService;
 
+    // Security: ADMIN-only access
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<Page<AuditLog>> getAllAuditLogs(
             @RequestParam(defaultValue = "0") int page,
@@ -36,6 +38,8 @@ public class AuditLogController {
         return ResponseEntity.ok(auditLogs);
     }
 
+    // Security: ADMIN-only access
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/user/{username}")
     public ResponseEntity<Page<AuditLog>> getAuditLogsByUsername(
             @PathVariable String username,
@@ -47,6 +51,8 @@ public class AuditLogController {
         return ResponseEntity.ok(auditLogs);
     }
 
+    // Security: ADMIN-only access
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/action/{action}")
     public ResponseEntity<Page<AuditLog>> getAuditLogsByAction(
             @PathVariable String action,
@@ -58,6 +64,8 @@ public class AuditLogController {
         return ResponseEntity.ok(auditLogs);
     }
 
+    // Security: ADMIN-only access
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/resource/{resourceType}")
     public ResponseEntity<Page<AuditLog>> getAuditLogsByResourceType(
             @PathVariable String resourceType,
@@ -69,6 +77,8 @@ public class AuditLogController {
         return ResponseEntity.ok(auditLogs);
     }
 
+    // Security: ADMIN-only access
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/date-range")
     public ResponseEntity<Page<AuditLog>> getAuditLogsByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
@@ -81,6 +91,8 @@ public class AuditLogController {
         return ResponseEntity.ok(auditLogs);
     }
 
+    // Security: ADMIN-only access
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/recent")
     public ResponseEntity<List<AuditLog>> getRecentAuditLogs() {
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "timestamp"));
@@ -88,6 +100,8 @@ public class AuditLogController {
         return ResponseEntity.ok(auditLogs.getContent());
     }
 
+    // Security: ADMIN-only access
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/cleanup")
     public ResponseEntity<String> cleanupOldLogs(@RequestParam(defaultValue = "90") int daysToKeep) {
         int deletedCount = auditLogService.cleanupOldLogs(daysToKeep);

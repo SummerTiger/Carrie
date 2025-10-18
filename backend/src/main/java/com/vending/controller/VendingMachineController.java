@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -27,6 +28,8 @@ public class VendingMachineController {
     @Autowired
     private VendingMachineRepository vendingMachineRepository;
 
+    // Security: Read access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @GetMapping
     public ResponseEntity<?> getAllMachines(
             @RequestParam(defaultValue = "0") int page,
@@ -74,6 +77,8 @@ public class VendingMachineController {
         return ResponseEntity.ok(response);
     }
 
+    // Security: Read access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @GetMapping("/{id}")
     public ResponseEntity<VendingMachine> getMachineById(@PathVariable UUID id) {
         VendingMachine machine = vendingMachineRepository.findById(id)
@@ -81,11 +86,15 @@ public class VendingMachineController {
         return ResponseEntity.ok(machine);
     }
 
+    // Security: Read access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @GetMapping("/active")
     public ResponseEntity<List<VendingMachine>> getActiveMachines() {
         return ResponseEntity.ok(vendingMachineRepository.findByActiveTrue());
     }
 
+    // Security: Write access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @PostMapping
     public ResponseEntity<VendingMachine> createMachine(@Valid @RequestBody VendingMachine machine) {
         // Check for duplicate POS serial number
@@ -98,6 +107,8 @@ public class VendingMachineController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
+    // Security: Write access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @PutMapping("/{id}")
     public ResponseEntity<VendingMachine> updateMachine(@PathVariable UUID id, @Valid @RequestBody VendingMachine machineUpdate) {
         VendingMachine machine = vendingMachineRepository.findById(id)
@@ -118,6 +129,8 @@ public class VendingMachineController {
         return ResponseEntity.ok(vendingMachineRepository.save(machine));
     }
 
+    // Security: Write access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMachine(@PathVariable UUID id) {
         if (!vendingMachineRepository.existsById(id)) {

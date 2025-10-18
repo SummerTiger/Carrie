@@ -7,6 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,6 +23,8 @@ public class FileUploadController {
 
     private final FileStorageService fileStorageService;
 
+    // Security: Write access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(
             @RequestParam("file") MultipartFile file,
@@ -39,6 +42,8 @@ public class FileUploadController {
         return ResponseEntity.ok(response);
     }
 
+    // Security: Read access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @GetMapping("/{fileName:.+}")
     public ResponseEntity<Resource> serveFile(@PathVariable String fileName, HttpServletRequest request) {
         Resource resource = fileStorageService.loadFileAsResource(fileName);
@@ -60,6 +65,8 @@ public class FileUploadController {
                 .body(resource);
     }
 
+    // Security: Write access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @DeleteMapping("/{fileName:.+}")
     public ResponseEntity<Void> deleteFile(@PathVariable String fileName) {
         fileStorageService.deleteFile(fileName);
