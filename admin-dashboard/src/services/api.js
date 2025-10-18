@@ -101,4 +101,13 @@ export const procurementAPI = {
   delete: (id) => api.delete(`/procurement-batches/${id}`),
 };
 
+// Users
+export const usersAPI = {
+  getAll: () => api.get('/users'),
+  getById: (id) => api.get(`/users/${id}`),
+  create: (user) => api.post('/users', user),
+  update: (id, user) => api.put(`/users/${id}`, user),
+  delete: (id) => api.delete(`/users/${id}`),
+};
+
 export default api;

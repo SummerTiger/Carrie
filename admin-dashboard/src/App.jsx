@@ -7,6 +7,7 @@ import Products from './pages/Products';
 import VendingMachines from './pages/VendingMachines';
 import Procurement from './pages/Procurement';
 import AuditLogs from './pages/AuditLogs';
+import Users from './pages/Users';
 import ChangePassword from './pages/ChangePassword';
 import DashboardLayout from './components/DashboardLayout';
 
@@ -41,6 +42,7 @@ function App() {
             <Route path="machines" element={<VendingMachines />} />
             <Route path="procurement" element={<Procurement />} />
             <Route path="audit-logs" element={<AuditLogs />} />
+            <Route path="users" element={<Users />} />
             <Route path="change-password" element={<ChangePassword />} />
           </Route>
 
