@@ -49,7 +49,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login", "/api/auth/refresh",
                                  "/api/health", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()
-                .requestMatchers("/api/audit-logs/**").hasRole("ADMIN")
+                .requestMatchers("/api/audit-logs/**", "/api/users/**").hasRole("ADMIN")
                 .requestMatchers("/api/products/**", "/api/procurement/**",
                                  "/api/machines/**", "/api/files/**").hasAnyRole("ADMIN", "MANAGER")
                 .anyRequest().authenticated()
