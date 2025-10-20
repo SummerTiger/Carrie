@@ -52,4 +52,8 @@ public interface RestockingLogRepository extends JpaRepository<RestockingLog, UU
            "WHERE rl.maintenancePerformed = true " +
            "AND rl.timestamp >= :startDate")
     List<RestockingLog> findLogsWithMaintenance(@Param("startDate") LocalDateTime startDate);
+
+    long countByTimestampBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+    List<RestockingLog> findByMachineAndTimestampBetween(VendingMachine machine, LocalDateTime startDate, LocalDateTime endDate);
 }

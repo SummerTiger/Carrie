@@ -19,6 +19,7 @@ function DashboardLayout() {
     { path: '/dashboard/products', label: 'Products', icon: '📦' },
     { path: '/dashboard/machines', label: 'Vending Machines', icon: '🏪' },
     { path: '/dashboard/procurement', label: 'Procurement', icon: '🛒' },
+    { path: '/dashboard/analytics', label: 'Analytics', icon: '📈' },
     { path: '/dashboard/audit-logs', label: 'Audit Logs', icon: '📋' },
     { path: '/dashboard/users', label: 'Users', icon: '👥' },
     { path: '/dashboard/change-password', label: 'Change Password', icon: '🔐' },

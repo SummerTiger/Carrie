@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+        .summary-card {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #4CAF50;
+            border-radius: 4px;
+        }
+        .metric {
+            display: inline-block;
+            margin: 10px 20px 10px 0;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .metric-label {
+            color: #666;
+            font-size: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .low-stock {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Daily Inventory Report</h1>
+        <p th:text="${reportDate}">Report Date</p>
+    </div>
+
+    <div class="content">
+        <div class="summary-card">
+            <h2>Summary</h2>
+            <div class="metric">
+                <div class="metric-value" th:text="${totalProducts}">0</div>
+                <div class="metric-label">Total Products</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" th:text="${totalMachines}">0</div>
+                <div class="metric-label">Vending Machines</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" th:text="${lowStockCount}">0</div>
+                <div class="metric-label">Low Stock Items</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" th:text="'$' + ${#numbers.formatDecimal(totalValue, 1, 2)}">$0.00</div>
+                <div class="metric-label">Total Inventory Value</div>
+            </div>
+        </div>
+
+        <div th:if="${lowStockProducts != null and #lists.size(lowStockProducts) > 0}">
+            <h3>Low Stock Alert</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>SKU</th>
+                        <th>Current Stock</th>
+                        <th>Min Stock Level</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="product : ${lowStockProducts}">
+                        <td th:text="${product.name}">Product Name</td>
+                        <td th:text="${product.sku}">SKU-001</td>
+                        <td class="low-stock" th:text="${product.quantity}">0</td>
+                        <td th:text="${product.minStockLevel}">10</td>
+                        <td th:text="'$' + ${#numbers.formatDecimal(product.price, 1, 2)}">$0.00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:if="${recentTransactions != null and #lists.size(recentTransactions) > 0}">
+            <h3>Recent Activity (Last 24 hours)</h3>
+            <ul>
+                <li th:each="transaction : ${recentTransactions}" th:text="${transaction}">Transaction description</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>This is an automated report from Vending Inventory Management System</p>
+        <p th:text="'Generated on ' + ${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd HH:mm:ss')}">Generated on</p>
+    </div>
+</body>
+</html>

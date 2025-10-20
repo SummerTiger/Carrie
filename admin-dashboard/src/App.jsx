@@ -9,6 +9,7 @@ import Procurement from './pages/Procurement';
 import AuditLogs from './pages/AuditLogs';
 import Users from './pages/Users';
 import ChangePassword from './pages/ChangePassword';
+import Analytics from './pages/Analytics';
 import DashboardLayout from './components/DashboardLayout';
 
 // Protected Route Component
@@ -41,6 +42,7 @@ function App() {
             <Route path="products" element={<Products />} />
             <Route path="machines" element={<VendingMachines />} />
             <Route path="procurement" element={<Procurement />} />
+            <Route path="analytics" element={<Analytics />} />
             <Route path="audit-logs" element={<AuditLogs />} />
             <Route path="users" element={<Users />} />
             <Route path="change-password" element={<ChangePassword />} />

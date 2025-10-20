@@ -45,6 +45,22 @@ spring:
     caffeine:
       spec: maximumSize=1000,expireAfterAccess=600s
 
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
 server:
   port: ${PORT:8080}
   error:
@@ -90,6 +106,18 @@ app:
     allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
     allowed-headers: "*"
     allow-credentials: true
+
+  email:
+    enabled: ${EMAIL_ENABLED:false}  # Disabled by default, enable in production
+    from: ${EMAIL_FROM:noreply@vendingsystem.com}
+    from-name: ${EMAIL_FROM_NAME:Vending Inventory System}
+    report:
+      enabled: ${EMAIL_REPORTS_ENABLED:false}
+      default-recipient: ${EMAIL_DEFAULT_RECIPIENT:admin@example.com}
+      recipients: ${EMAIL_RECIPIENTS:}  # Comma-separated list
+      daily-cron: "0 0 8 * * *"  # 8 AM daily
+      weekly-cron: "0 0 8 * * MON"  # 8 AM Monday
+      monthly-cron: "0 0 8 1 * *"  # 8 AM 1st of month
 
 # Springdoc OpenAPI
 springdoc:

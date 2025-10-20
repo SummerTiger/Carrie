@@ -15,7 +15,13 @@ public class CacheConfig {
         return new ConcurrentMapCacheManager(
                 "products",
                 "vendingMachines",
-                "productPrices"
+                "productPrices",
+                "analytics-summary",
+                "analytics-revenue",
+                "analytics-inventory",
+                "analytics-machines",
+                "analytics-products",
+                "analytics-categories"
         );
     }
 }

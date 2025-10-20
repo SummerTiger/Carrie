@@ -9,7 +9,9 @@ function AuditLogs() {
   const [filters, setFilters] = useState({
     username: '',
     action: '',
-    resourceType: ''
+    resourceType: '',
+    startDate: '',
+    endDate: ''
   });
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -26,7 +28,9 @@ function AuditLogs() {
       setError('');
 
       let response;
-      if (filters.username) {
+      if (filters.startDate && filters.endDate) {
+        response = await auditLogsAPI.getByDateRange(filters.startDate, filters.endDate, { page, size: 20 });
+      } else if (filters.username) {
         response = await auditLogsAPI.getByUsername(filters.username, { page, size: 20 });
       } else if (filters.action) {
         response = await auditLogsAPI.getByAction(filters.action, { page, size: 20 });
@@ -62,10 +66,41 @@ function AuditLogs() {
     setFilters({
       username: '',
       action: '',
-      resourceType: ''
+      resourceType: '',
+      startDate: '',
+      endDate: ''
     });
     setPage(0);
     setTimeout(fetchLogs, 0);
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Timestamp', 'Username', 'Action', 'Resource Type', 'Resource ID', 'IP Address', 'Status', 'Details'];
+    const rows = logs.map(log => [
+      formatTimestamp(log.timestamp),
+      log.username,
+      log.action,
+      log.resourceType || '',
+      log.resourceId || '',
+      log.ipAddress || '',
+      log.status,
+      log.details || ''
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `audit_logs_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const formatTimestamp = (timestamp) => {
@@ -99,9 +134,14 @@ function AuditLogs() {
     <div className="page-container">
       <div className="page-header">
         <h1>Audit Logs</h1>
-        <button className="btn-primary" onClick={fetchLogs}>
-          Refresh
-        </button>
+        <div>
+          <button className="btn-primary" onClick={exportToCSV} disabled={logs.length === 0} style={{ marginRight: '10px' }}>
+            Export to CSV
+          </button>
+          <button className="btn-primary" onClick={fetchLogs}>
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* View Mode - Detail View */}
@@ -222,6 +262,28 @@ function AuditLogs() {
             <option value="BATCH">Batch</option>
             <option value="RESTOCK">Restock</option>
           </select>
+        </div>
+
+        <div className="filter-group">
+          <label htmlFor="startDate">Start Date:</label>
+          <input
+            type="date"
+            id="startDate"
+            name="startDate"
+            value={filters.startDate}
+            onChange={handleFilterChange}
+          />
+        </div>
+
+        <div className="filter-group">
+          <label htmlFor="endDate">End Date:</label>
+          <input
+            type="date"
+            id="endDate"
+            name="endDate"
+            value={filters.endDate}
+            onChange={handleFilterChange}
+          />
         </div>
 
         <div className="filter-actions">

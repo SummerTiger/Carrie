@@ -100,7 +100,6 @@ public class AuthController {
             loginAttemptService.loginSucceeded(loginRequest.username());
 
             // Security: Reset rate limit for this IP after successful login
-            String ipAddress = getClientIpAddress(request);
             rateLimitService.resetRateLimit(ipAddress);
 
             // Log successful login
