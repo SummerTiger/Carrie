@@ -16,6 +16,7 @@ public class CacheConfig {
                 "products",
                 "vendingMachines",
                 "productPrices",
+                "vendors",
                 "analytics-summary",
                 "analytics-revenue",
                 "analytics-inventory",

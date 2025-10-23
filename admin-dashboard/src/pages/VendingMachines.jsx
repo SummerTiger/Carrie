@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { machinesAPI } from '../services/api';
+import { machinesAPI, machineBrandsAPI, machineModelsAPI } from '../services/api';
 
 function VendingMachines() {
   const [machines, setMachines] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -12,8 +14,8 @@ function VendingMachines() {
   const [formData, setFormData] = useState({
     machineId: '',
     machineName: '',
-    brand: '',
-    model: '',
+    brandId: '',
+    modelId: '',
     modelNumber: '',
     serialNumber: '',
     datePurchased: '',
@@ -36,6 +38,8 @@ function VendingMachines() {
 
   useEffect(() => {
     fetchMachines();
+    fetchBrands();
+    fetchModels();
   }, []);
 
   const fetchMachines = async () => {
@@ -46,6 +50,24 @@ function VendingMachines() {
     } catch (err) {
       setError('Failed to fetch vending machines');
       setLoading(false);
+    }
+  };
+
+  const fetchBrands = async () => {
+    try {
+      const response = await machineBrandsAPI.getActive();
+      setBrands(response.data);
+    } catch (err) {
+      console.error('Failed to fetch machine brands:', err);
+    }
+  };
+
+  const fetchModels = async () => {
+    try {
+      const response = await machineModelsAPI.getActive();
+      setModels(response.data);
+    } catch (err) {
+      console.error('Failed to fetch machine models:', err);
     }
   };
 
@@ -95,8 +117,8 @@ function VendingMachines() {
     setFormData({
       machineId: machine.machineId || '',
       machineName: machine.machineName || '',
-      brand: machine.brand || '',
-      model: machine.model || '',
+      brandId: machine.machineBrand?.id || '',
+      modelId: machine.machineModel?.id || '',
       modelNumber: machine.modelNumber || '',
       serialNumber: machine.serialNumber || '',
       datePurchased: machine.datePurchased || '',
@@ -131,8 +153,8 @@ function VendingMachines() {
     setFormData({
       machineId: machine.machineId || '',
       machineName: machine.machineName || '',
-      brand: machine.brand || '',
-      model: machine.model || '',
+      brandId: machine.machineBrand?.id || '',
+      modelId: machine.machineModel?.id || '',
       modelNumber: machine.modelNumber || '',
       serialNumber: machine.serialNumber || '',
       datePurchased: machine.datePurchased || '',
@@ -178,8 +200,8 @@ function VendingMachines() {
     setFormData({
       machineId: '',
       machineName: '',
-      brand: '',
-      model: '',
+      brandId: '',
+      modelId: '',
       modelNumber: '',
       serialNumber: '',
       datePurchased: '',
@@ -262,25 +284,37 @@ function VendingMachines() {
             <div className="form-row">
               <div className="form-group">
                 <label>Brand *</label>
-                <input
-                  type="text"
-                  name="brand"
-                  value={formData.brand}
+                <select
+                  name="brandId"
+                  value={formData.brandId}
                   onChange={handleInputChange}
                   disabled={viewMode}
                   required
-                />
+                >
+                  <option value="">Select a brand</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
                 <label>Model *</label>
-                <input
-                  type="text"
-                  name="model"
-                  value={formData.model}
+                <select
+                  name="modelId"
+                  value={formData.modelId}
                   onChange={handleInputChange}
                   disabled={viewMode}
                   required
-                />
+                >
+                  <option value="">Select a model</option>
+                  {models.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -542,9 +576,9 @@ function VendingMachines() {
                     )}
                   </td>
                   <td>
-                    {machine.brand}
+                    {machine.machineBrand?.name || '-'}
                     <br />
-                    <small>{machine.model}</small>
+                    <small>{machine.machineModel?.name || '-'}</small>
                   </td>
                   <td>
                     <small>{machine.serialNumber || '-'}</small>

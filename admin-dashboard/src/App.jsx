@@ -10,6 +10,11 @@ import AuditLogs from './pages/AuditLogs';
 import Users from './pages/Users';
 import ChangePassword from './pages/ChangePassword';
 import Analytics from './pages/Analytics';
+import Vendors from './pages/Vendors';
+import ProductCategories from './pages/ProductCategories';
+import ProductBrands from './pages/ProductBrands';
+import MachineBrands from './pages/MachineBrands';
+import MachineModels from './pages/MachineModels';
 import DashboardLayout from './components/DashboardLayout';
 
 // Protected Route Component
@@ -42,6 +47,11 @@ function App() {
             <Route path="products" element={<Products />} />
             <Route path="machines" element={<VendingMachines />} />
             <Route path="procurement" element={<Procurement />} />
+            <Route path="vendors" element={<Vendors />} />
+            <Route path="categories" element={<ProductCategories />} />
+            <Route path="product-brands" element={<ProductBrands />} />
+            <Route path="machine-brands" element={<MachineBrands />} />
+            <Route path="machine-models" element={<MachineModels />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="audit-logs" element={<AuditLogs />} />
             <Route path="users" element={<Users />} />

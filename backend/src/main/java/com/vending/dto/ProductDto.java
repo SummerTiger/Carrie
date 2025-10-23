@@ -14,6 +14,8 @@ public record ProductDto(
     UUID id,
     @NotBlank String name,
     @NotBlank String category,
+    UUID categoryId,
+    UUID brandId,
     String unitSize,
     @NotNull @Min(0) Integer currentStock,
     Integer minimumStock,

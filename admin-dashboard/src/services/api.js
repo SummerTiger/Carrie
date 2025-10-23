@@ -150,4 +150,89 @@ export const analyticsAPI = {
   },
 };
 
+// Vendors
+export const vendorsAPI = {
+  getAll: () => api.get('/vendors'),
+  getActive: () => api.get('/vendors/active'),
+  getPreferred: () => api.get('/vendors/preferred'),
+  getById: (id) => api.get(`/vendors/${id}`),
+  search: (query) => api.get(`/vendors/search?query=${encodeURIComponent(query)}`),
+  create: (vendor) => api.post('/vendors', vendor),
+  update: (id, vendor) => api.put(`/vendors/${id}`, vendor),
+  delete: (id) => api.delete(`/vendors/${id}`),
+  toggleStatus: (id) => api.patch(`/vendors/${id}/toggle-status`),
+};
+
+// Product Categories
+export const productCategoriesAPI = {
+  getAll: () => api.get('/product-categories'),
+  getById: (id) => api.get(`/product-categories/${id}`),
+  getActive: () => api.get('/product-categories/active'),
+  create: (category) => api.post('/product-categories', category),
+  update: (id, category) => api.put(`/product-categories/${id}`, category),
+  delete: (id) => api.delete(`/product-categories/${id}`),
+};
+
+// Product Brands
+export const productBrandsAPI = {
+  getAll: () => api.get('/product-brands'),
+  getById: (id) => api.get(`/product-brands/${id}`),
+  getActive: () => api.get('/product-brands/active'),
+  create: (brand) => api.post('/product-brands', brand),
+  update: (id, brand) => api.put(`/product-brands/${id}`, brand),
+  delete: (id) => api.delete(`/product-brands/${id}`),
+};
+
+// Machine Brands
+export const machineBrandsAPI = {
+  getAll: () => api.get('/machine-brands'),
+  getById: (id) => api.get(`/machine-brands/${id}`),
+  getActive: () => api.get('/machine-brands/active'),
+  create: (brand) => api.post('/machine-brands', brand),
+  update: (id, brand) => api.put(`/machine-brands/${id}`, brand),
+  delete: (id) => api.delete(`/machine-brands/${id}`),
+};
+
+// Machine Models
+export const machineModelsAPI = {
+  getAll: () => api.get('/machine-models'),
+  getById: (id) => api.get(`/machine-models/${id}`),
+  getActive: () => api.get('/machine-models/active'),
+  getByBrand: (brandId) => api.get(`/machine-models/brand/${brandId}`),
+  create: (model) => api.post('/machine-models', model),
+  update: (id, model) => api.put(`/machine-models/${id}`, model),
+  delete: (id) => api.delete(`/machine-models/${id}`),
+};
+
+// Sales Records
+export const salesAPI = {
+  getAll: () => api.get('/sales'),
+  getById: (id) => api.get(`/sales/${id}`),
+  getByDateRange: (startDate, endDate) => api.get('/sales/date-range', {
+    params: { startDate, endDate }
+  }),
+  getBySource: (source) => api.get(`/sales/source/${source}`),
+  importCSV: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/sales/import/csv', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  importExcel: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/sales/import/excel', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  delete: (id) => api.delete(`/sales/${id}`),
+};
+
+// Legacy alias for backward compatibility
+export const categoriesAPI = {
+  getAll: () => api.get('/products/categories'),
+  getActive: () => api.get('/products/categories/active'),
+};
+
 export default api;

@@ -48,4 +48,6 @@ public interface ProcurementBatchRepository extends JpaRepository<ProcurementBat
     @Query("SELECT COUNT(pb) FROM ProcurementBatch pb " +
            "WHERE pb.purchaseDate >= :startDate")
     long countBatchesSince(@Param("startDate") LocalDateTime startDate);
+
+    List<ProcurementBatch> findByVendorId(UUID vendorId);
 }

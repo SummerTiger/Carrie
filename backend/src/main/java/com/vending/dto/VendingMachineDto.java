@@ -12,7 +12,9 @@ import java.util.UUID;
 public record VendingMachineDto(
     UUID id,
     @NotBlank String brand,
+    UUID brandId,
     @NotBlank String model,
+    UUID modelId,
     boolean hasCashBillReader,
     boolean hasCashlessPos,
     String posSerialNumber,

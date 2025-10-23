@@ -24,19 +24,35 @@ This system consists of **three applications**:
 ### Admin Dashboard (React 18 + Vite)
 - ✅ **JWT Authentication** - Login with token persistence
 - ✅ **Products Page** - Full CRUD interface with real-time updates
-  - Product name, category, pricing
+  - Product name with category/brand dropdowns
   - Stock levels (current/minimum)
   - HST tax exemption status
   - Barcode and SKU tracking
   - Active/inactive status
 - ✅ **Vending Machines Page** - Full CRUD interface
-  - Brand and model information
+  - Brand and model selection via dropdowns
   - Location details (name, address, city, province, postal code)
   - Payment features (cash reader, POS, coin changer)
   - Active/inactive status
+- ✅ **Product Categories Page** - Manage product categories
+  - Category name, icon, description
+  - Display order and active status
+  - Full CRUD operations
+- ✅ **Product Brands Page** - Manage product brands
+  - Brand name, logo URL, website
+  - Display order and active status
+  - Full CRUD operations
+- ✅ **Machine Brands Page** - Manage vending machine brands
+  - Brand name, logo URL, website
+  - Display order and active status
+  - Full CRUD operations
+- ✅ **Machine Models Page** - Manage machine models
+  - Model name, specifications, capacity
+  - Brand relationship via dropdown
+  - Full CRUD operations
 - ✅ **Dashboard** - System statistics and health monitoring
 - ✅ **Protected Routes** - Automatic login redirect
-- ✅ **Responsive Design** - Clean, modern UI
+- ✅ **Responsive Design** - Clean, modern UI with consistent table layouts
 
 ### Mobile App (React Native 0.82 for iOS)
 - ✅ **JWT Authentication** - AsyncStorage token persistence
@@ -173,6 +189,10 @@ vending-inventory-system/
 - **users** - User accounts with role-based access
 - **vending_machines** - Machine configurations and locations
 - **products** - Centralized product catalog
+- **product_categories** - Product category taxonomy (new)
+- **product_brands** - Product brand management (new)
+- **machine_brands** - Machine brand management (new)
+- **machine_models** - Machine model specifications (new)
 - **machine_product_prices** - Custom pricing per machine
 - **procurement_batches** - Supplier purchase records
 - **procurement_items** - Line items in procurement batches
@@ -180,6 +200,10 @@ vending-inventory-system/
 - **restock_items** - Products restocked during visits
 
 ### Key Relationships
+- One product category → Many products
+- One product brand → Many products
+- One machine brand → Many machine models
+- One machine model → Many vending machines
 - One machine → Many product prices
 - One product → Many machine prices
 - One procurement batch → Many procurement items
@@ -215,12 +239,12 @@ Authorization: Bearer <your-jwt-token>
 ## 📊 API Endpoints
 
 ### Vending Machines
-- `GET /api/machines` - List all machines
-- `GET /api/machines/{id}` - Get machine details
-- `POST /api/machines` - Create new machine
-- `PUT /api/machines/{id}` - Update machine
-- `DELETE /api/machines/{id}` - Delete machine
-- `GET /api/machines/active` - Get active machines only
+- `GET /api/vending-machines` - List all machines
+- `GET /api/vending-machines/{id}` - Get machine details
+- `POST /api/vending-machines` - Create new machine
+- `PUT /api/vending-machines/{id}` - Update machine
+- `DELETE /api/vending-machines/{id}` - Delete machine
+- `GET /api/vending-machines/active` - Get active machines only
 
 ### Products
 - `GET /api/products` - List all products
@@ -231,11 +255,44 @@ Authorization: Bearer <your-jwt-token>
 - `GET /api/products/low-stock` - Get low stock alerts
 - `GET /api/products/search?q={term}` - Search products
 
+### Product Categories
+- `GET /api/product-categories` - List all categories
+- `GET /api/product-categories/{id}` - Get category details
+- `POST /api/product-categories` - Create new category
+- `PUT /api/product-categories/{id}` - Update category
+- `DELETE /api/product-categories/{id}` - Delete category
+- `GET /api/product-categories/active` - Get active categories only
+
+### Product Brands
+- `GET /api/product-brands` - List all brands
+- `GET /api/product-brands/{id}` - Get brand details
+- `POST /api/product-brands` - Create new brand
+- `PUT /api/product-brands/{id}` - Update brand
+- `DELETE /api/product-brands/{id}` - Delete brand
+- `GET /api/product-brands/active` - Get active brands only
+
+### Machine Brands
+- `GET /api/machine-brands` - List all machine brands
+- `GET /api/machine-brands/{id}` - Get brand details
+- `POST /api/machine-brands` - Create new brand
+- `PUT /api/machine-brands/{id}` - Update brand
+- `DELETE /api/machine-brands/{id}` - Delete brand
+- `GET /api/machine-brands/active` - Get active brands only
+
+### Machine Models
+- `GET /api/machine-models` - List all models
+- `GET /api/machine-models/{id}` - Get model details
+- `POST /api/machine-models` - Create new model
+- `PUT /api/machine-models/{id}` - Update model
+- `DELETE /api/machine-models/{id}` - Delete model
+- `GET /api/machine-models/active` - Get active models only
+- `GET /api/machine-models/brand/{brandId}` - Get models by brand
+
 ### Procurement
-- `GET /api/procurement/batches` - List procurement batches
-- `POST /api/procurement/batches` - Create new batch
-- `GET /api/procurement/batches/{id}` - Get batch details
-- `GET /api/procurement/suppliers` - List all suppliers
+- `GET /api/procurement-batches` - List procurement batches
+- `POST /api/procurement-batches` - Create new batch
+- `GET /api/procurement-batches/{id}` - Get batch details
+- `GET /api/procurement-batches/suppliers` - List all suppliers
 
 ### Restocking
 - `GET /api/restocking/logs` - List restocking logs

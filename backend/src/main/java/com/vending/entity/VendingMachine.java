@@ -46,6 +46,14 @@ public class VendingMachine {
     @Column(nullable = false)
     private String model;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "brand_id")
+    private MachineBrand machineBrand;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "model_id")
+    private MachineModel machineModel;
+
     @Size(max = 100, message = "Model number must not exceed 100 characters")
     @Column(name = "model_number")
     private String modelNumber;

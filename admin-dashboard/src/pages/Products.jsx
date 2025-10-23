@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { productsAPI } from '../services/api';
+import { productsAPI, productCategoriesAPI, productBrandsAPI } from '../services/api';
 
 function Products() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -11,7 +13,8 @@ function Products() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    category: '',
+    categoryId: '',
+    brandId: '',
     unitSize: '',
     basePrice: '',
     currentStock: '',
@@ -25,6 +28,8 @@ function Products() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
+    fetchBrands();
   }, []);
 
   const fetchProducts = async () => {
@@ -35,6 +40,24 @@ function Products() {
     } catch (err) {
       setError('Failed to fetch products');
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await productCategoriesAPI.getActive();
+      setCategories(response.data);
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+    }
+  };
+
+  const fetchBrands = async () => {
+    try {
+      const response = await productBrandsAPI.getActive();
+      setBrands(response.data);
+    } catch (err) {
+      console.error('Failed to fetch brands:', err);
     }
   };
 
@@ -71,7 +94,8 @@ function Products() {
     setEditingProduct(product);
     setFormData({
       name: product.name || '',
-      category: product.category || '',
+      categoryId: product.category?.id || '',
+      brandId: product.brand?.id || '',
       unitSize: product.unitSize || '',
       basePrice: product.basePrice || '',
       currentStock: product.currentStock || '',
@@ -96,7 +120,8 @@ function Products() {
     setEditingProduct(product);
     setFormData({
       name: product.name || '',
-      category: product.category || '',
+      categoryId: product.category?.id || '',
+      brandId: product.brand?.id || '',
       unitSize: product.unitSize || '',
       basePrice: product.basePrice || '',
       currentStock: product.currentStock || '',
@@ -132,7 +157,8 @@ function Products() {
   const resetForm = () => {
     setFormData({
       name: '',
-      category: '',
+      categoryId: '',
+      brandId: '',
       unitSize: '',
       basePrice: '',
       currentStock: '',
@@ -192,18 +218,40 @@ function Products() {
               </div>
               <div className="form-group">
                 <label>Category *</label>
-                <input
-                  type="text"
-                  name="category"
-                  value={formData.category}
+                <select
+                  name="categoryId"
+                  value={formData.categoryId}
                   onChange={handleInputChange}
                   disabled={viewMode}
                   required
-                />
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
             <div className="form-row">
+              <div className="form-group">
+                <label>Brand</label>
+                <select
+                  name="brandId"
+                  value={formData.brandId}
+                  onChange={handleInputChange}
+                  disabled={viewMode}
+                >
+                  <option value="">Select a brand</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="form-group">
                 <label>Unit Size</label>
                 <input
@@ -214,6 +262,9 @@ function Products() {
                   disabled={viewMode}
                 />
               </div>
+            </div>
+
+            <div className="form-row">
               <div className="form-group">
                 <label>Base Price</label>
                 <input
@@ -342,6 +393,7 @@ function Products() {
                 <tr>
                   <th>Name</th>
                   <th>Category</th>
+                  <th>Brand</th>
                   <th>Price</th>
                   <th>Stock</th>
                   <th>HST</th>
@@ -357,7 +409,8 @@ function Products() {
                     style={{ cursor: 'pointer' }}
                   >
                     <td>{product.name}</td>
-                  <td>{product.category}</td>
+                  <td>{product.category?.name || '-'}</td>
+                  <td>{product.brand?.name || '-'}</td>
                   <td>${product.basePrice?.toFixed(2)}</td>
                   <td>{product.currentStock || 0}</td>
                   <td>{product.hstExempt ? 'Exempt' : 'Taxable'}</td>

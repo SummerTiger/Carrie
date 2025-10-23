@@ -1,8 +1,13 @@
 package com.vending.controller;
 
+import com.vending.dto.ProductDto;
 import com.vending.entity.Product;
+import com.vending.entity.ProductBrand;
+import com.vending.entity.ProductCategory;
 import com.vending.exception.DuplicateResourceException;
 import com.vending.exception.ResourceNotFoundException;
+import com.vending.repository.ProductBrandRepository;
+import com.vending.repository.ProductCategoryRepository;
 import com.vending.repository.ProductRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +32,12 @@ public class ProductController {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private ProductCategoryRepository productCategoryRepository;
+
+    @Autowired
+    private ProductBrandRepository productBrandRepository;
 
     // Security: Read access for ADMIN and MANAGER roles
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -98,6 +109,59 @@ public class ProductController {
 
     // Security: Read access for ADMIN and MANAGER roles
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @GetMapping("/categories")
+    public ResponseEntity<List<Map<String, Object>>> getAllCategories() {
+        List<Product> allProducts = productRepository.findAll();
+
+        // Group products by category and create category summary
+        Map<String, Map<String, Object>> categoryMap = new HashMap<>();
+
+        for (Product product : allProducts) {
+            String category = product.getCategory();
+            if (category == null || category.trim().isEmpty()) {
+                category = "Uncategorized";
+            }
+
+            final String categoryName = category; // Make final for lambda
+            categoryMap.computeIfAbsent(categoryName, k -> {
+                Map<String, Object> categoryInfo = new HashMap<>();
+                categoryInfo.put("name", k);
+                categoryInfo.put("active", true);
+                categoryInfo.put("productCount", 0);
+                categoryInfo.put("description", "Category for " + k);
+                categoryInfo.put("icon", getCategoryIcon(k));
+                return categoryInfo;
+            });
+
+            // Increment product count
+            Map<String, Object> categoryInfo = categoryMap.get(categoryName);
+            categoryInfo.put("productCount", (Integer) categoryInfo.get("productCount") + 1);
+        }
+
+        return ResponseEntity.ok(new java.util.ArrayList<>(categoryMap.values()));
+    }
+
+    private String getCategoryIcon(String category) {
+        if (category == null) return "📦";
+        return switch (category.toLowerCase()) {
+            case "beverages", "drinks" -> "🥤";
+            case "snacks" -> "🍿";
+            case "candy", "chocolate" -> "🍫";
+            case "chips" -> "🥔";
+            case "water" -> "💧";
+            case "soda", "soft drinks" -> "🥤";
+            case "energy drinks" -> "⚡";
+            case "juice" -> "🧃";
+            case "coffee" -> "☕";
+            case "tea" -> "🍵";
+            case "food" -> "🍱";
+            case "healthy", "organic" -> "🥗";
+            default -> "📦";
+        };
+    }
+
+    // Security: Read access for ADMIN and MANAGER roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @GetMapping("/category/{category}")
     public ResponseEntity<List<Product>> getProductsByCategory(@PathVariable String category) {
         return ResponseEntity.ok(productRepository.findByCategoryAndActiveTrue(category));
@@ -106,20 +170,47 @@ public class ProductController {
     // Security: Write access for ADMIN and MANAGER roles
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @PostMapping
-    public ResponseEntity<Product> createProduct(@Valid @RequestBody Product product) {
+    public ResponseEntity<Product> createProduct(@Valid @RequestBody ProductDto productDto) {
         // Check for duplicate name
-        if (product.getName() != null && productRepository.findByName(product.getName()).isPresent()) {
-            throw new DuplicateResourceException("Product", "name", product.getName());
+        if (productDto.name() != null && productRepository.findByName(productDto.name()).isPresent()) {
+            throw new DuplicateResourceException("Product", "name", productDto.name());
         }
         // Check for duplicate barcode
-        if (product.getBarcode() != null && !product.getBarcode().isEmpty()
-                && productRepository.findByBarcode(product.getBarcode()).isPresent()) {
-            throw new DuplicateResourceException("Product", "barcode", product.getBarcode());
+        if (productDto.barcode() != null && !productDto.barcode().isEmpty()
+                && productRepository.findByBarcode(productDto.barcode()).isPresent()) {
+            throw new DuplicateResourceException("Product", "barcode", productDto.barcode());
         }
         // Check for duplicate SKU
-        if (product.getSku() != null && !product.getSku().isEmpty()
-                && productRepository.findBySku(product.getSku()).isPresent()) {
-            throw new DuplicateResourceException("Product", "sku", product.getSku());
+        if (productDto.sku() != null && !productDto.sku().isEmpty()
+                && productRepository.findBySku(productDto.sku()).isPresent()) {
+            throw new DuplicateResourceException("Product", "sku", productDto.sku());
+        }
+
+        // Create Product entity from DTO
+        Product product = new Product();
+        product.setName(productDto.name());
+        product.setCategory(productDto.category());
+        product.setUnitSize(productDto.unitSize());
+        product.setCurrentStock(productDto.currentStock());
+        product.setMinimumStock(productDto.minimumStock());
+        product.setHstExempt(productDto.hstExempt());
+        product.setBasePrice(productDto.basePrice());
+        product.setDescription(productDto.description());
+        product.setBarcode(productDto.barcode());
+        product.setSku(productDto.sku());
+        product.setActive(productDto.active());
+
+        // Handle foreign key relationships
+        if (productDto.categoryId() != null) {
+            ProductCategory category = productCategoryRepository.findById(productDto.categoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("ProductCategory", "id", productDto.categoryId()));
+            product.setProductCategory(category);
+        }
+
+        if (productDto.brandId() != null) {
+            ProductBrand brand = productBrandRepository.findById(productDto.brandId())
+                .orElseThrow(() -> new ResourceNotFoundException("ProductBrand", "id", productDto.brandId()));
+            product.setProductBrand(brand);
         }
 
         Product saved = productRepository.save(product);
@@ -129,39 +220,58 @@ public class ProductController {
     // Security: Write access for ADMIN and MANAGER roles
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(@PathVariable UUID id, @Valid @RequestBody Product productUpdate) {
+    public ResponseEntity<Product> updateProduct(@PathVariable UUID id, @Valid @RequestBody ProductDto productDto) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
 
         // Check for duplicate name (excluding current product)
-        if (productUpdate.getName() != null && !productUpdate.getName().equals(product.getName())) {
-            productRepository.findByName(productUpdate.getName()).ifPresent(p -> {
-                throw new DuplicateResourceException("Product", "name", productUpdate.getName());
+        if (productDto.name() != null && !productDto.name().equals(product.getName())) {
+            productRepository.findByName(productDto.name()).ifPresent(p -> {
+                throw new DuplicateResourceException("Product", "name", productDto.name());
             });
         }
 
         // Check for duplicate barcode (excluding current product)
-        if (productUpdate.getBarcode() != null && !productUpdate.getBarcode().isEmpty()
-                && !productUpdate.getBarcode().equals(product.getBarcode())) {
-            productRepository.findByBarcode(productUpdate.getBarcode()).ifPresent(p -> {
-                throw new DuplicateResourceException("Product", "barcode", productUpdate.getBarcode());
+        if (productDto.barcode() != null && !productDto.barcode().isEmpty()
+                && !productDto.barcode().equals(product.getBarcode())) {
+            productRepository.findByBarcode(productDto.barcode()).ifPresent(p -> {
+                throw new DuplicateResourceException("Product", "barcode", productDto.barcode());
             });
         }
 
         // Check for duplicate SKU (excluding current product)
-        if (productUpdate.getSku() != null && !productUpdate.getSku().isEmpty()
-                && !productUpdate.getSku().equals(product.getSku())) {
-            productRepository.findBySku(productUpdate.getSku()).ifPresent(p -> {
-                throw new DuplicateResourceException("Product", "sku", productUpdate.getSku());
+        if (productDto.sku() != null && !productDto.sku().isEmpty()
+                && !productDto.sku().equals(product.getSku())) {
+            productRepository.findBySku(productDto.sku()).ifPresent(p -> {
+                throw new DuplicateResourceException("Product", "sku", productDto.sku());
             });
         }
 
-        if (productUpdate.getName() != null) product.setName(productUpdate.getName());
-        if (productUpdate.getCategory() != null) product.setCategory(productUpdate.getCategory());
-        if (productUpdate.getBasePrice() != null) product.setBasePrice(productUpdate.getBasePrice());
-        if (productUpdate.getCurrentStock() != null) product.setCurrentStock(productUpdate.getCurrentStock());
-        product.setActive(productUpdate.isActive());
-        product.setHstExempt(productUpdate.isHstExempt());
+        // Update basic fields
+        if (productDto.name() != null) product.setName(productDto.name());
+        if (productDto.category() != null) product.setCategory(productDto.category());
+        if (productDto.unitSize() != null) product.setUnitSize(productDto.unitSize());
+        if (productDto.basePrice() != null) product.setBasePrice(productDto.basePrice());
+        if (productDto.currentStock() != null) product.setCurrentStock(productDto.currentStock());
+        if (productDto.minimumStock() != null) product.setMinimumStock(productDto.minimumStock());
+        if (productDto.description() != null) product.setDescription(productDto.description());
+        if (productDto.barcode() != null) product.setBarcode(productDto.barcode());
+        if (productDto.sku() != null) product.setSku(productDto.sku());
+        product.setActive(productDto.active());
+        product.setHstExempt(productDto.hstExempt());
+
+        // Handle foreign key relationships
+        if (productDto.categoryId() != null) {
+            ProductCategory category = productCategoryRepository.findById(productDto.categoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("ProductCategory", "id", productDto.categoryId()));
+            product.setProductCategory(category);
+        }
+
+        if (productDto.brandId() != null) {
+            ProductBrand brand = productBrandRepository.findById(productDto.brandId())
+                .orElseThrow(() -> new ResourceNotFoundException("ProductBrand", "id", productDto.brandId()));
+            product.setProductBrand(brand);
+        }
 
         return ResponseEntity.ok(productRepository.save(product));
     }

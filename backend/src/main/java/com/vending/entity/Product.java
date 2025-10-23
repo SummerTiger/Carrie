@@ -42,6 +42,14 @@ public class Product {
     @Column(nullable = false)
     private String category;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private ProductCategory productCategory;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "brand_id")
+    private ProductBrand productBrand;
+
     @Size(max = 50, message = "Unit size must not exceed 50 characters")
     @Column(name = "unit_size")
     private String unitSize;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { procurementAPI, productsAPI } from '../services/api';
+import { procurementAPI, productsAPI, vendorsAPI } from '../services/api';
 
 // Security: Use environment variable for API URL
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
@@ -7,6 +7,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080
 function Procurement() {
   const [batches, setBatches] = useState([]);
   const [products, setProducts] = useState([]);
+  const [vendors, setVendors] = useState([]);
+  const [selectedVendor, setSelectedVendor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -27,6 +29,7 @@ function Procurement() {
   useEffect(() => {
     fetchBatches();
     fetchProducts();
+    fetchVendors();
   }, []);
 
   const fetchBatches = async () => {
@@ -47,6 +50,26 @@ function Procurement() {
     } catch (err) {
       console.error('Failed to fetch products:', err);
     }
+  };
+
+  const fetchVendors = async () => {
+    try {
+      const response = await vendorsAPI.getAll();
+      setVendors(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error('Failed to fetch vendors:', err);
+    }
+  };
+
+  const handleVendorChange = (e) => {
+    const vendorId = e.target.value;
+    const vendor = vendors.find(v => v.id === vendorId);
+    setSelectedVendor(vendor || null);
+    setFormData({
+      ...formData,
+      supplier: vendor ? vendor.name : '',
+      supplierContact: vendor ? vendor.phoneNumber || '' : '',
+    });
   };
 
   const handleInputChange = (e) => {
@@ -262,6 +285,7 @@ function Procurement() {
     setViewMode(false);
     setEditMode(false);
     setSelectedBatch(null);
+    setSelectedVendor(null);
     resetForm();
   };
 
@@ -275,6 +299,7 @@ function Procurement() {
       items: [],
       receiptImages: [],
     });
+    setSelectedVendor(null);
   };
 
   if (loading) return <div className="loading">Loading procurement batches...</div>;
@@ -336,14 +361,26 @@ function Procurement() {
             <div className="form-row">
               <div className="form-group">
                 <label>Supplier *</label>
-                <input
-                  type="text"
-                  name="supplier"
-                  value={formData.supplier}
-                  onChange={handleInputChange}
-                  disabled={viewMode}
-                  required
-                />
+                {viewMode ? (
+                  <input
+                    type="text"
+                    value={formData.supplier}
+                    disabled
+                  />
+                ) : (
+                  <select
+                    value={selectedVendor?.id || ''}
+                    onChange={handleVendorChange}
+                    required
+                  >
+                    <option value="">Select Vendor</option>
+                    {vendors.map((vendor) => (
+                      <option key={vendor.id} value={vendor.id}>
+                        {vendor.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="form-group">
                 <label>Supplier Contact</label>
@@ -356,6 +393,39 @@ function Procurement() {
                 />
               </div>
             </div>
+
+            {selectedVendor && (
+              <div style={{
+                marginTop: '15px',
+                padding: '15px',
+                backgroundColor: '#f5f5f5',
+                borderRadius: '4px',
+                border: '1px solid #ddd'
+              }}>
+                <h4 style={{ marginTop: 0, marginBottom: '10px' }}>Vendor Information</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px' }}>
+                  {selectedVendor.phoneNumber && (
+                    <div>
+                      <strong>Phone:</strong> {selectedVendor.phoneNumber}
+                    </div>
+                  )}
+                  {selectedVendor.taxId && (
+                    <div>
+                      <strong>HST ID:</strong> {selectedVendor.taxId}
+                    </div>
+                  )}
+                  {selectedVendor.addressLine1 && (
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <strong>Address:</strong> {selectedVendor.addressLine1}
+                      {selectedVendor.addressLine2 && `, ${selectedVendor.addressLine2}`}
+                      {selectedVendor.city && `, ${selectedVendor.city}`}
+                      {selectedVendor.province && ` ${selectedVendor.province}`}
+                      {selectedVendor.postalCode && ` ${selectedVendor.postalCode}`}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="form-group">
               <label>Notes</label>

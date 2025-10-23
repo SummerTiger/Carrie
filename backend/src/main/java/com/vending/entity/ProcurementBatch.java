@@ -39,6 +39,10 @@ public class ProcurementBatch {
     @Column(name = "supplier_contact")
     private String supplierContact;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vendor_id")
+    private Vendor vendor;
+
     @ManyToMany
     @JoinTable(
         name = "batch_products",
